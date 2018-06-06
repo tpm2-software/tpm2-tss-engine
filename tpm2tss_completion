@@ -1,0 +1,40 @@
+_tpm2tss-genkey()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    case "${prev}" in
+    -a | --alg)
+        COMPREPLY=( $(compgen -W "rsa ecdsa" -- ${cur}) );
+        return 0
+        ;;
+    -c | --curve)
+        COMPREPLY=( $(compgen -W "nist_p256" -- ${cur}) );
+        return 0
+        ;;
+    -e | --exponent)
+        COMPREPLY=( $(compgen -W "65537" -- ${cur}) );
+        return 0
+        ;;
+    -o | --ownerpw | \
+    -p | --password)
+        COMPREPLY=""
+        return 0
+        ;;
+    -s | --keysize)
+        COMPREPLY=( $(compgen -W "2048" -- ${cur}) );
+        return 0
+        ;;
+    esac;
+
+    opts="-a --alg -c --curve -e --exponent -h --help -o --ownerpw -p --password -s --keysize -v --verbose"
+    if [[ ${cur} = -* ]] ; then
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        return 0
+    fi
+
+    COMPREPLY=( $(compgen -f ${cur}) )
+}
+complete -F _tpm2tss-genkey tpm2tss-genkey
