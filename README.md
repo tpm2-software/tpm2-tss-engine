@@ -80,7 +80,7 @@ openssl rand -engine tpm2tss -hex 10'
 The following sequence of commands creates an RSA key using the TPM, exports the
 public key, encrypts a data file and decrypts it using the TPM:
 ```
-openssl-gentpm2tss -a rsa -k 2048 mykey
+tpm2tss-genkey -a rsa -k 2048 mykey
 openssl rsa -engine tpm2tss -inform engine -in mykey -pubout -outform pem -out mykey.pub
 openssl pkeyutl -pubin -inkey mykey.pub -in mydata -encrypt -out mycipher
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -decrypt -in mycipher -out mydata
@@ -105,7 +105,7 @@ do not perform any hashing of the input data.
 The following sequence of commands creates an ECDSA key using the TPM, exports
 the public key, signs a data file using the TPM and validates the signature:
 ```
-openssl-gentpm2tss -a rsa -k 2048 mykey
+tpm2tss-genkey -a rsa -k 2048 mykey
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -sign -in mydata -out mysig
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -verify -in mydata -sigfile mysig
 ```
