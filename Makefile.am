@@ -69,6 +69,22 @@ libtpm2tss_la_LIBADD = $(AM_LDADD)
 libtpm2tss_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined -avoid-version \
             -export-symbols-regex '(tpm2tss*|bind_engine|v_check)'
 
+install-exec-local:
+	([ -e $(DESTDIR)$(openssl_enginedir) ] || \
+         $(MKDIR_P) $(DESTDIR)$(openssl_enginedir))
+
+# Due to confusions with OpenSSL Naming conventions for engines regarding the
+# lib* prefix, we will create a symlink for the engine on install
+# see https://github.com/tpm2-software/tpm2-tss-engine/issues/6#issuecomment-422489744
+# see https://github.com/openssl/openssl/commit/9ee0ed3de66678a15db126d10b3e4226e835b8f5 
+install-exec-hook:
+	(cd $(DESTDIR)$(openssl_enginedir) && \
+         $(LN_S) libtpm2tss.so tpm2tss.so)
+
+uninstall-hook:
+	(cd $(DESTDIR)$(openssl_enginedir) && \
+         [ -L tpm2tss.so ] && rm -f tpm2tss.so)
+
 ### KeyGenerator ###
 bin_PROGRAMS += tpm2tss-genkey
 
