@@ -64,6 +64,9 @@ AC_PROG_CC_C99
 AM_PROG_CC_C_O
 LT_INIT()
 
+AC_PROG_MKDIR_P
+AC_PROG_LN_S
+
 AC_ARG_ENABLE([debug],
             [AS_HELP_STRING([--enable-debug],
                             [build with debug output (default is no)])],
