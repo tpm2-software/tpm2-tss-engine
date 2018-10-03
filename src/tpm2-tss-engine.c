@@ -29,6 +29,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
+#include <stdlib.h>
 #include <string.h>
 
 #include <openssl/engine.h>
@@ -165,16 +166,50 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
     EVP_PKEY *pkey = NULL;
 
 	DBG("Loading private key %s\n", key_id);
+    tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
+    if (tpm2Data == NULL) {
+      ERR(tpm2tss_tpm2data_read, ERR_R_MALLOC_FAILURE);
+      goto error;
+    }
+    if (strncmp(key_id, "0x", 2) == 0) {
+      ESYS_CONTEXT *ectx = NULL;
+      ESYS_TR keyHandle = ESYS_TR_NONE;
+      TSS2_RC r;
+      TPM2B_PUBLIC *outPublic;
 
-    if (!tpm2tss_tpm2data_read(key_id, &tpm2Data)) {
+      tpm2Data->privatetype = handle;
+      tpm2Data->handle = strtoll(key_id, NULL, 0);
+      r = Esys_Initialize(&ectx, NULL, NULL);
+      if (r) {
+        ERR(loadkey, TPM2TSS_R_GENERAL_FAILURE);
+        goto error;
+      }
+      r = Esys_TR_FromTPMPublic(ectx, tpm2Data->handle, ESYS_TR_NONE,
+                                ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
+      if (r) {
+        ERR(loadkey, TPM2TSS_R_GENERAL_FAILURE);
+        goto error;
+      }
+      r = Esys_ReadPublic(ectx, keyHandle, ESYS_TR_NONE, ESYS_TR_NONE,
+                          ESYS_TR_NONE, &outPublic, NULL, NULL);
+      if (r) {
+        ERR(loadkey, TPM2TSS_R_GENERAL_FAILURE);
+        goto error;
+      }
+      Esys_TR_Close(ectx, &keyHandle);
+      Esys_Finalize(&ectx);
+      tpm2Data->pub = *outPublic;
+    } else {
+      tpm2Data->privatetype = blob;
+      if (!tpm2tss_tpm2data_read(key_id, &tpm2Data)) {
         ERR(loadkey, TPM2TSS_R_TPM2DATA_READ_FAILED);
         goto error;
+      }
     }
 
     if (!get_auth("user key", ui, cb_data, &tpm2Data->userauth)) {
         goto error;
     }
-
     DBG("Loaded key uses alg-id %x\n", tpm2Data->pub.publicArea.type);
 
     switch(tpm2Data->pub.publicArea.type) {

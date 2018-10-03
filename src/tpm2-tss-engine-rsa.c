@@ -157,8 +157,19 @@ rsa_priv_enc(int flen,
     DBG("Padded digest data (size=%i):\n", digest.size);
     DBGBUF(&digest.buffer[0], digest.size);
 
-    r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
-    ERRchktss(rsa_priv_enc, r, goto error);
+    if (tpm2Data->privatetype == handle) {
+      r = Esys_Initialize(&ectx, NULL, NULL);
+      ERRchktss(rsa_priv_enc, r, goto out);
+      r = Esys_Startup(ectx, TPM2_SU_CLEAR);
+      ERRchktss(rsa_priv_enc, r, goto out);
+      r = Esys_TR_FromTPMPublic(ectx, tpm2Data->handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
+      ERRchktss(rsa_priv_enc, r, goto out);
+      r = Esys_TR_SetAuth(ectx, ESYS_TR_RH_OWNER, &tpm2Data->userauth);
+      ERRchktss(rsa_priv_enc, r, goto error);
+    } else {
+      r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
+      ERRchktss(rsa_priv_enc, r, goto error);
+    }
 
     DBG("Signing (via decrypt operation).\n");
     r = Esys_RSA_Decrypt(ectx, keyHandle,
@@ -180,9 +191,13 @@ error:
 
 out:
     free(sig);
-    if (keyHandle != ESYS_TR_NONE)
+    if (keyHandle != ESYS_TR_NONE) {
+      if (tpm2Data->privatetype == handle) {
+        Esys_TR_Close(ectx, &keyHandle);
+      } else {
         Esys_FlushContext(ectx, keyHandle);
-
+      }
+    }
     Esys_Finalize(&ectx);
     return (r == TSS2_RC_SUCCESS)? ret : 0;
 }
@@ -246,8 +261,19 @@ rsa_priv_dec(int flen,
         goto error;
     }
 
-    r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
-    ERRchktss(rsa_priv_dec, r, goto out);
+    if (tpm2Data->privatetype == handle) {
+      r = Esys_Initialize(&ectx, NULL, NULL);
+      ERRchktss(rsa_priv_dec, r, goto out);
+      r = Esys_Startup(ectx, TPM2_SU_CLEAR);
+      ERRchktss(rsa_priv_dec, r, goto out);
+      r = Esys_TR_FromTPMPublic(ectx, tpm2Data->handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
+      ERRchktss(rsa_priv_dec, r, goto out);
+      r = Esys_TR_SetAuth(ectx, ESYS_TR_RH_OWNER, &tpm2Data->userauth);
+      ERRchktss(rsa_priv_dec, r, goto out);
+    } else {
+      r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
+      ERRchktss(rsa_priv_dec, r, goto out);
+    }
 
     r = Esys_RSA_Decrypt(ectx, keyHandle,
                          ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
@@ -268,8 +294,13 @@ error:
 
 out:
     free(message);
-    if (keyHandle != ESYS_TR_NONE)
+    if (keyHandle != ESYS_TR_NONE) {
+      if (tpm2Data->privatetype == handle) {
+        Esys_TR_Close(ectx, &keyHandle);
+      } else {
         Esys_FlushContext(ectx, keyHandle);
+      }
+    }
 
     Esys_Finalize(&ectx);
     return (r == TSS2_RC_SUCCESS)? flen : 0;
