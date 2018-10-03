@@ -78,7 +78,7 @@ install-exec-local:
 # Due to confusions with OpenSSL Naming conventions for engines regarding the
 # lib* prefix, we will create a symlink for the engine on install
 # see https://github.com/tpm2-software/tpm2-tss-engine/issues/6#issuecomment-422489744
-# see https://github.com/openssl/openssl/commit/9ee0ed3de66678a15db126d10b3e4226e835b8f5 
+# see https://github.com/openssl/openssl/commit/9ee0ed3de66678a15db126d10b3e4226e835b8f5
 install-exec-hook:
 	(cd $(DESTDIR)$(openssl_enginedir) && \
          $(LN_S) libtpm2tss.so tpm2tss.so)
@@ -101,8 +101,8 @@ TESTS = test/ecdsa.sh \
         test/rsadecrypt.sh \
         test/rsasign.sh \
         test/failload.sh \
-        test/failwrite.sh
-
+        test/failwrite.sh \
+        test/rsasign_persistent.sh
 EXTRA_DIST += $(TESTS)
 
 # Adding user and developer information

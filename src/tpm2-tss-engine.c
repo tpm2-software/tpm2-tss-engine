@@ -207,9 +207,8 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
         }
       }
 
-    if (!(tpm2Data->pub.publicArea.objectAttributes & TPMA_OBJECT_NODA))
-        if (!get_auth("user key", ui, cb_data, &tpm2Data->userauth))
-                goto error;
+    if (!get_auth("user key", ui, cb_data, &tpm2Data->userauth))
+            goto error;
 
     DBG("Loaded key uses alg-id %x\n", tpm2Data->pub.publicArea.type);
 
