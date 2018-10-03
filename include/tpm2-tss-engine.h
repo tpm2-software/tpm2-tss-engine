@@ -34,10 +34,15 @@
 #include <openssl/engine.h>
 #include <tss2/tss2_tpm2_types.h>
 
+typedef enum { blob, handle } KEY_TYPE ;
 typedef struct {
     TPM2B_DIGEST userauth;
     TPM2B_PUBLIC pub;
-    TPM2B_PRIVATE priv;
+    union {
+      TPM2B_PRIVATE priv;
+      TPM2_HANDLE handle;
+    };
+    KEY_TYPE privatetype;
 } TPM2_DATA;
 
 #define TPM2TSS_SET_OWNERAUTH ENGINE_CMD_BASE
