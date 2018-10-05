@@ -34,7 +34,11 @@
 #include <openssl/engine.h>
 #include <tss2/tss2_tpm2_types.h>
 
-typedef enum { blob, handle } KEY_TYPE ;
+typedef enum {
+    KEY_TYPE_BLOB,
+    KEY_TYPE_HANDLE
+} KEY_TYPE;
+
 typedef struct {
     TPM2B_DIGEST userauth;
     TPM2B_PUBLIC pub;

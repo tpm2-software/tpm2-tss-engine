@@ -69,6 +69,14 @@ install:
   - make install DESTDIR=${PWD}/../installdir
   - rm ${PWD}/../installdir/usr/local/lib/*.la
   - popd
+# Tpm2-tools
+  - git clone https://github.com/tpm2-software/tpm2-tools.git
+  - pushd tpm2-tools
+  - ./bootstrap
+  - ./configure
+  - make -j$(nproc)
+  - make install DESTDIR=${PWD}/../installdir
+  - popd
 
 before_script:
   - ./bootstrap
