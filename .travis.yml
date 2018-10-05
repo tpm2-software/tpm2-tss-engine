@@ -28,6 +28,8 @@ addons:
     - libssl-dev
     - uthash-dev
     - pandoc
+    - libcurl3
+    - libtool
 
 install:
   - mkdir -p installdir/usr/local/bin
