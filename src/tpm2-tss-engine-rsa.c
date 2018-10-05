@@ -157,7 +157,7 @@ rsa_priv_enc(int flen,
     DBG("Padded digest data (size=%i):\n", digest.size);
     DBGBUF(&digest.buffer[0], digest.size);
 
-    if (tpm2Data->privatetype == handle) {
+    if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
       r = Esys_Initialize(&ectx, NULL, NULL);
       ERRchktss(rsa_priv_enc, r, goto out);
       r = Esys_Startup(ectx, TPM2_SU_CLEAR);
@@ -192,7 +192,7 @@ error:
 out:
     free(sig);
     if (keyHandle != ESYS_TR_NONE) {
-      if (tpm2Data->privatetype == handle) {
+      if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
         Esys_TR_Close(ectx, &keyHandle);
       } else {
         Esys_FlushContext(ectx, keyHandle);
@@ -261,7 +261,7 @@ rsa_priv_dec(int flen,
         goto error;
     }
 
-    if (tpm2Data->privatetype == handle) {
+    if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
       r = Esys_Initialize(&ectx, NULL, NULL);
       ERRchktss(rsa_priv_dec, r, goto out);
       r = Esys_Startup(ectx, TPM2_SU_CLEAR);
@@ -295,7 +295,7 @@ error:
 out:
     free(message);
     if (keyHandle != ESYS_TR_NONE) {
-      if (tpm2Data->privatetype == handle) {
+      if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
         Esys_TR_Close(ectx, &keyHandle);
       } else {
         Esys_FlushContext(ectx, keyHandle);

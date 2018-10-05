@@ -165,7 +165,7 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
     TPM2_DATA *tpm2Data = NULL;
     EVP_PKEY *pkey = NULL;
 
-	DBG("Loading private key %s\n", key_id);
+    DBG("Loading private key %s\n", key_id);
     tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
       ERR(tpm2tss_tpm2data_read, ERR_R_MALLOC_FAILURE);
@@ -177,7 +177,7 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
       TSS2_RC r;
       TPM2B_PUBLIC *outPublic;
 
-      tpm2Data->privatetype = handle;
+      tpm2Data->privatetype = KEY_TYPE_HANDLE;
       tpm2Data->handle = strtoll(key_id, NULL, 0);
       r = Esys_Initialize(&ectx, NULL, NULL);
       if (r) {
@@ -196,16 +196,16 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
         ERR(loadkey, TPM2TSS_R_GENERAL_FAILURE);
         goto error;
       }
-      Esys_TR_Close(ectx, &keyHandle);
-      Esys_Finalize(&ectx);
-      tpm2Data->pub = *outPublic;
-    } else {
-      tpm2Data->privatetype = blob;
-      if (!tpm2tss_tpm2data_read(key_id, &tpm2Data)) {
-        ERR(loadkey, TPM2TSS_R_TPM2DATA_READ_FAILED);
-        goto error;
+        Esys_TR_Close(ectx, &keyHandle);
+        Esys_Finalize(&ectx);
+        tpm2Data->pub = *outPublic;
+      } else {
+        tpm2Data->privatetype = KEY_TYPE_BLOB;
+        if (!tpm2tss_tpm2data_read(key_id, &tpm2Data)) {
+          ERR(loadkey, TPM2TSS_R_TPM2DATA_READ_FAILED);
+          goto error;
+        }
       }
-    }
 
     if (!get_auth("user key", ui, cb_data, &tpm2Data->userauth)) {
         goto error;
