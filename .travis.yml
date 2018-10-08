@@ -28,7 +28,7 @@ addons:
     - libssl-dev
     - uthash-dev
     - pandoc
-    - libcurl3
+    - libcurl3-dev
     - libtool
 
 install:
