@@ -101,7 +101,9 @@ PKG_CHECK_MODULES([CRYPTO], [libcrypto >= 1.0.2g])
 PKG_CHECK_MODULES([TSS2_ESYS],[tss2-esys])
 
 AC_PATH_PROG([PANDOC], [pandoc])
-AS_IF([test -z "$PANDOC"], AC_MSG_ERROR([Program pandoc not found.]))
+AS_IF([test -z "$PANDOC"],
+    [AC_MSG_WARN([Required executable pandoc not found, man pages will not be built])])
+AM_CONDITIONAL([HAVE_PANDOC],[test -n "$PANDOC"])
 
 AC_OUTPUT
 
