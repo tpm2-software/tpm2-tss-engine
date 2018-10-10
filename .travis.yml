@@ -22,7 +22,7 @@ addons:
     - autoconf-archive
     - automake
     - build-essential
-    - libgcrypt20-dev
+    - libgcrypt-dev
     - realpath
     - lcov
     - libssl-dev
