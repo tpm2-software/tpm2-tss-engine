@@ -71,7 +71,7 @@ openssl engine -t -c tpm2tss
 ## Random data
 A set of 10 random bytes can be retrieved using
 ```
-openssl rand -engine tpm2tss -hex 10'
+openssl rand -engine tpm2tss -hex 10
 ```
 
 ## RSA operations
@@ -80,7 +80,7 @@ openssl rand -engine tpm2tss -hex 10'
 The following sequence of commands creates an RSA key using the TPM, exports the
 public key, encrypts a data file and decrypts it using the TPM:
 ```
-tpm2tss-genkey -a rsa -k 2048 mykey
+tpm2tss-genkey -a rsa -s 2048 mykey
 openssl rsa -engine tpm2tss -inform engine -in mykey -pubout -outform pem -out mykey.pub
 openssl pkeyutl -pubin -inkey mykey.pub -in mydata -encrypt -out mycipher
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -decrypt -in mycipher -out mydata
@@ -94,7 +94,7 @@ public key, signs a data file using the TPM and validates the signature:
 ```
 openssl rsa -engine tpm2tss -inform engine -in mykey -pubout -outform pem -out mykey.pub
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -sign -in mydata -out mysig
-openssl pkeyutl -inkey mykey.pub -verify -in mydata -sigfile mysig
+openssl pkeyutl -pubin -inkey mykey.pub -verify -in mydata -sigfile mysig
 ```
 Alternatively, the data can be validated directly using:
 `openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -verify -in mydata -sigfile mysig`
@@ -105,7 +105,7 @@ do not perform any hashing of the input data.
 The following sequence of commands creates an ECDSA key using the TPM, exports
 the public key, signs a data file using the TPM and validates the signature:
 ```
-tpm2tss-genkey -a rsa -k 2048 mykey
+tpm2tss-genkey -a ecdsa mykey
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -sign -in mydata -out mysig
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -verify -in mydata -sigfile mysig
 ```
