@@ -37,6 +37,8 @@ AM_CFLAGS       = $(INCLUDE_DIRS) $(EXTRA_CFLAGS) $(TSS2_ESYS_CFLAGS) \
 AM_LDFLAGS      = $(EXTRA_LDFLAGS) $(CODE_COVERAGE_LIBS)
 AM_LDADD        = $(TSS2_ESYS_LIBS) $(CRYPTO_LIBS) -ldl
 
+AM_DISTCHECK_CONFIGURE_FLAGS=--with-enginesdir=
+
 # Initialize empty variables to be extended throughout
 lib_LTLIBRARIES = 
 noinst_LTLIBRARIES =
@@ -51,7 +53,7 @@ bin_PROGRAMS =
 @CODE_COVERAGE_RULES@
 
 ### OpenSSL Engine ###
-openssl_enginedir = @libdir@/openssl/engines
+openssl_enginedir = $(ENGINESDIR)
 openssl_engine_LTLIBRARIES = libtpm2tss.la
 
 include_HEADERS = include/tpm2-tss-engine.h
