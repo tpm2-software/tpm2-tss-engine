@@ -150,6 +150,7 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
         goto error;
     }
     BIO_free(bio);
+    bio = NULL;
 
     tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
