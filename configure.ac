@@ -97,7 +97,9 @@ AX_ADD_LINK_FLAG([-Wl,-z,relro])
 
 AX_CODE_COVERAGE
 
-PKG_CHECK_MODULES([CRYPTO], [libcrypto >= 1.0.2g])
+PKG_PROG_PKG_CONFIG([0.25])
+PKG_CHECK_MODULES([CRYPTO], [libcrypto >= 1.0.2g],
+                  [ac_enginesdir=`$PKG_CONFIG --variable=enginesdir libcrypto`])
 PKG_CHECK_MODULES([TSS2_ESYS],[tss2-esys])
 
 AC_PATH_PROG([PANDOC], [pandoc])
@@ -105,9 +107,23 @@ AS_IF([test -z "$PANDOC"],
     [AC_MSG_WARN([Required executable pandoc not found, man pages will not be built])])
 AM_CONDITIONAL([HAVE_PANDOC],[test -n "$PANDOC"])
 
+AC_ARG_WITH([enginesdir], 
+            [AS_HELP_STRING([--with-enginesdir],
+                            [Set the OpenSSL engine directory (default: use pkg-config)])],
+            [],
+            [with_enginesdir=$ac_enginesdir])
+AS_IF([test -z "$with_enginesdir"],
+    [AC_MSG_WARN([Empty enginesdir, using $libdir/engines instead.])])
+# This weirdness is necessary to enable distcheck via DISTCHECK_CONFIGURE_FLAGS
+AS_IF([test -z "$with_enginesdir"],
+    [with_enginesdir=$libdir/engines])
+AC_SUBST(ENGINESDIR, "$with_enginesdir")
+
 AC_OUTPUT
 
 AC_MSG_RESULT([
-    $PACKAGE_NAME $VERSION
+$PACKAGE_NAME $VERSION
+    man-pages:  $PANDOC
+    enginesdir: $with_enginesdir
 ])
     
