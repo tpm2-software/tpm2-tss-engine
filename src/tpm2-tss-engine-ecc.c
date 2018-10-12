@@ -131,7 +131,6 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 
 	TSS2_RC r;
     ESYS_CONTEXT *ectx;
-    ESYS_TR primaryHandle = ESYS_TR_NONE;
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPMT_SIGNATURE *sig = NULL;
 
@@ -205,8 +204,6 @@ error:
     r = -1;
 out:
     free(sig);
-    if (primaryHandle != ESYS_TR_NONE)
-        Esys_FlushContext(ectx, primaryHandle);
     if (keyHandle != ESYS_TR_NONE)
         Esys_FlushContext(ectx, keyHandle);
     if (r != TSS2_RC_SUCCESS && ret != NULL) {
