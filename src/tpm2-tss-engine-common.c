@@ -38,6 +38,21 @@
 #include "tpm2-tss-engine.h"
 #include "tpm2-tss-engine-common.h"
 
+ASN1_SEQUENCE(TSSPRIVKEY) = {
+	ASN1_SIMPLE(TSSPRIVKEY, type, ASN1_OBJECT),
+	ASN1_EXP_OPT(TSSPRIVKEY, emptyAuth, ASN1_BOOLEAN, 0),
+	ASN1_SIMPLE(TSSPRIVKEY, parent, ASN1_INTEGER),
+	ASN1_SIMPLE(TSSPRIVKEY, pubkey, ASN1_OCTET_STRING),
+	ASN1_SIMPLE(TSSPRIVKEY, privkey, ASN1_OCTET_STRING)
+} ASN1_SEQUENCE_END(TSSPRIVKEY)
+
+#define TSSPRIVKEY_PEM_STRING "TSS2 PRIVATE KEY"
+
+IMPLEMENT_ASN1_FUNCTIONS(TSSPRIVKEY);
+IMPLEMENT_PEM_write_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY);
+IMPLEMENT_PEM_read_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY);
+
+
 /** Serialize tpm2data onto disk
  *
  * Write the tpm2tss key data into a file using PEM encoding.
@@ -51,10 +66,7 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
 {
     TSS2_RC r;
     BIO *bio = NULL;
-    ASN1_OCTET_STRING *privstr = NULL, *pubstr = NULL;
-
-    unsigned char *privasn1 = NULL, *pubasn1 = NULL;
-    int	privasn1_len = 0, pubasn1_len = 0;
+    TSSPRIVKEY *tpk = NULL;
 
     uint8_t privbuf[sizeof(tpm2Data->priv)];
     uint8_t pubbuf[sizeof(tpm2Data->pub)];
@@ -63,6 +75,12 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
     if ((bio = BIO_new_file(filename, "w")) == NULL) {
         ERR(tpm2tss_tpm2data_write, TPM2TSS_R_FILE_WRITE);
         goto error;
+    }
+
+    tpk = TSSPRIVKEY_new();
+    if (!tpk) {
+	    ERR(tpm2tss_tpm2data_write, ERR_R_MALLOC_FAILURE);
+	    goto error;
     }
 
     r = Tss2_MU_TPM2B_PRIVATE_Marshal(&tpm2Data->priv, &privbuf[0],
@@ -78,29 +96,28 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
         ERR(tpm2tss_tpm2data_write, TPM2TSS_R_DATA_CORRUPTED);
         goto error;
     }
-
-    privstr = ASN1_OCTET_STRING_new();
-    pubstr = ASN1_OCTET_STRING_new();
-	if (!privstr || !pubstr) {
+    tpk->type = OBJ_txt2obj(OID_loadableKey, 1);
+    tpk->parent = ASN1_INTEGER_new();
+    tpk->privkey = ASN1_OCTET_STRING_new();
+    tpk->pubkey = ASN1_OCTET_STRING_new();
+    if (!tpk->type || !tpk->privkey || !tpk->pubkey || !tpk->parent) {
         ERR(tpm2tss_tpm2data_write, ERR_R_MALLOC_FAILURE);
         goto error;
     }
 
-    ASN1_STRING_set(privstr, &privbuf[0], privbuf_len);
-    ASN1_STRING_set(pubstr, &pubbuf[0], pubbuf_len);
-	privasn1_len = i2d_ASN1_OCTET_STRING(privstr, &privasn1);
-	pubasn1_len = i2d_ASN1_OCTET_STRING(pubstr, &pubasn1);
+    /* Only TPM2_RH_OWNER is supported for now */
+    ASN1_INTEGER_set(tpk->parent, TPM2_RH_OWNER);
+    ASN1_STRING_set(tpk->privkey, &privbuf[0], privbuf_len);
+    ASN1_STRING_set(tpk->pubkey, &pubbuf[0], pubbuf_len);
 
-    PEM_write_bio(bio, "TSS2 PRIVKEY BLOB v1", "", privasn1, privasn1_len);
-    PEM_write_bio(bio, "TSS2 PUBKEY BLOB v1", "", pubasn1, pubasn1_len);
-
+    PEM_write_bio_TSSPRIVKEY(bio, tpk);
+    TSSPRIVKEY_free(tpk);
 	BIO_free(bio);
 
     return 1;
 error:
     if (bio) BIO_free(bio);
-    if (pubstr) ASN1_OCTET_STRING_free(pubstr);
-    if (privstr) ASN1_OCTET_STRING_free(privstr);
+    if (tpk) TSSPRIVKEY_free(tpk);
     return 0;
 }
 
@@ -117,23 +134,22 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
 {
     TSS2_RC r;
     BIO *bio = NULL;
-    ASN1_OCTET_STRING *pubstr = NULL, *privstr = NULL;
+    TSSPRIVKEY *tpk = NULL;
     TPM2_DATA *tpm2Data = NULL;
+    TPM2_HANDLE parent;
+    char type_oid[64];
 
-	if ((bio = BIO_new_file(filename, "r")) == NULL) {
+    if ((bio = BIO_new_file(filename, "r")) == NULL) {
         ERR(tpm2tss_tpm2data_read, TPM2TSS_R_FILE_READ);
         goto error;
     }
 
-    privstr = PEM_ASN1_read_bio((void *) d2i_ASN1_OCTET_STRING,
-				                "TSS2 PRIVKEY BLOB v1", bio, NULL, NULL, NULL);
-    pubstr = PEM_ASN1_read_bio((void *) d2i_ASN1_OCTET_STRING,
-				               "TSS2 PUBKEY BLOB v1", bio, NULL, NULL, NULL);
-    if (!privstr || !pubstr) {
-        ERR(tpm2tss_tpm2data_read, ERR_R_MALLOC_FAILURE);
+    tpk = PEM_read_bio_TSSPRIVKEY(bio, NULL, NULL, NULL);
+    if (!tpk) {
+	ERR(tpm2tss_tpm2data_read, TPM2TSS_R_DATA_CORRUPTED);
         goto error;
     }
-	BIO_free(bio);
+    BIO_free(bio);
 
     tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
@@ -142,29 +158,38 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
     }
     memset(tpm2Data, 0, sizeof(*tpm2Data));
 
-    r = Tss2_MU_TPM2B_PRIVATE_Unmarshal(privstr->data, privstr->length, NULL,
-                                        &tpm2Data->priv);
+    parent = ASN1_INTEGER_get(tpk->parent);
+    if (parent != TPM2_RH_OWNER) {
+        ERR(tpm2tss_tpm2data_read, TPM2TSS_R_CANNOT_MAKE_KEY);
+	goto error;
+    }
+
+    if (!OBJ_obj2txt(type_oid, sizeof(type_oid), tpk->type, 1) ||
+	strcmp(type_oid, OID_loadableKey)) {
+        ERR(tpm2tss_tpm2data_read, TPM2TSS_R_CANNOT_MAKE_KEY);
+	goto error;
+    }
+    r = Tss2_MU_TPM2B_PRIVATE_Unmarshal(tpk->privkey->data, tpk->privkey->length,
+					NULL, &tpm2Data->priv);
     if (r) {
         ERR(tpm2tss_tpm2data_read, TPM2TSS_R_DATA_CORRUPTED);
         goto error;
     }
-    r = Tss2_MU_TPM2B_PUBLIC_Unmarshal(pubstr->data, pubstr->length, NULL,
-                                       &tpm2Data->pub);
+    r = Tss2_MU_TPM2B_PUBLIC_Unmarshal(tpk->pubkey->data, tpk->pubkey->length,
+				       NULL, &tpm2Data->pub);
     if (r) {
         ERR(tpm2tss_tpm2data_read, TPM2TSS_R_DATA_CORRUPTED);
         goto error;
     }
 
-    ASN1_OCTET_STRING_free(pubstr);
-    ASN1_OCTET_STRING_free(privstr);
+    TSSPRIVKEY_free(tpk);
 
     *tpm2Datap = tpm2Data;
     return 1;
 error:
     if (tpm2Data) OPENSSL_free(tpm2Data);
 	if (bio) BIO_free(bio);
-    if (pubstr) ASN1_OCTET_STRING_free(pubstr);
-    if (privstr) ASN1_OCTET_STRING_free(privstr);
+    if (tpk) TSSPRIVKEY_free(tpk);
 
     return 0;
 }
