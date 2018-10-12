@@ -318,8 +318,14 @@ out:
 static int
 populate_rsa(RSA *rsa) {
     TPM2_DATA *tpm2Data = RSA_get_app_data(rsa);
+    UINT32 exponent;
+
     if (tpm2Data == NULL)
         goto error;
+
+    exponent = tpm2Data->pub.publicArea.parameters.rsaDetail.exponent;
+    if (!exponent)
+	    exponent = 0x10001;
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
     /* Setting the public portion of the key */
@@ -335,7 +341,7 @@ populate_rsa(RSA *rsa) {
         ERR(populate_rsa, ERR_R_MALLOC_FAILURE);
         goto error;
     }
-    BN_set_word(rsa->e, tpm2Data->pub.publicArea.parameters.rsaDetail.exponent);
+    BN_set_word(rsa->e, exponent);
 
     /* Setting private portions to 0 values so the public key can be extracted
        from the keyfile if this is desired. */
@@ -397,7 +403,7 @@ populate_rsa(RSA *rsa) {
         goto error;
     }
 
-    BN_set_word(e, tpm2Data->pub.publicArea.parameters.rsaDetail.exponent);
+    BN_set_word(e, exponent);
     BN_set_word(d, 0);
     BN_set_word(p, 0);
     BN_set_word(q, 0);
