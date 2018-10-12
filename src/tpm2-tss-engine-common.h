@@ -36,6 +36,10 @@
 
 #include "tpm2-tss-engine-err.h"
 
+#include <openssl/asn1t.h>
+#include <openssl/asn1.h>
+#include <openssl/pem.h>
+
 extern TPM2B_DIGEST ownerauth;
 
 int init_ecc(ENGINE *e);
@@ -84,5 +88,21 @@ TSS2_RC init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle,
          } \
      } \
 }
+
+typedef struct {
+	ASN1_OBJECT *type;
+	ASN1_BOOLEAN emptyAuth;
+	ASN1_INTEGER *parent;
+	ASN1_OCTET_STRING *pubkey;
+	ASN1_OCTET_STRING *privkey;
+} TSSPRIVKEY;
+
+
+DECLARE_ASN1_FUNCTIONS(TSSPRIVKEY);
+
+DECLARE_PEM_write_bio(TSSPRIVKEY, TSSPRIVKEY);
+DECLARE_PEM_read_bio(TSSPRIVKEY, TSSPRIVKEY);
+
+#define OID_loadableKey "2.23.133.10.2"
 
 #endif /* TPM2_TSS_ENGINE_COMMON_H */
