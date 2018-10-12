@@ -55,6 +55,7 @@ TSS2_RC init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle,
         .objectAttributes = (TPMA_OBJECT_USERWITHAUTH | \
                              TPMA_OBJECT_RESTRICTED | \
                              TPMA_OBJECT_DECRYPT | \
+                             TPMA_OBJECT_NODA | \
                              TPMA_OBJECT_FIXEDTPM | \
                              TPMA_OBJECT_FIXEDPARENT | \
                              TPMA_OBJECT_SENSITIVEDATAORIGIN), \
