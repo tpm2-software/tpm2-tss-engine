@@ -115,6 +115,7 @@ AUTHORS:
 EXTRA_DIST += AUTHORS
 CLEANFILES += AUTHORS
 
+if HAVE_PANDOC
 ### Man Pages
 man1_MANS = \
     man/tpm2tss-genkey.1
@@ -127,6 +128,19 @@ man3_MANS = \
     man/tpm2tss_ecc_getappdata.3 \
     man/tpm2tss_tpm2data_read.3 \
     man/tpm2tss_ecc_setappdata.3
+
+# If pandoc is enabled, we want to generate the manpages for the dist tarball
+EXTRA_DIST += \
+    $(man1_MANS) \
+    $(man3_MANS)
+
+else
+# If pandoc is not enabled, we want to complain that you need pandoc for make dist,
+# so hook the target and complain.
+dist-hook:
+	@(>&2 echo "You do not have pandoc, a requirement for the distribution of manpages")
+	@exit 1
+endif
 
 define man_dir
     mkdir man 2>/dev/null || test -d man
