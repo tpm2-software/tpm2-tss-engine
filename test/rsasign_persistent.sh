@@ -25,7 +25,8 @@ tpm2_load -C ${PARENT_CTX} -u ${TPM_RSA_PUBKEY} -r ${TPM_RSA_KEY} -o ${RSA_CTX}
 HANDLE=$(tpm2_evictcontrol -a o -c ${RSA_CTX} | cut -d ' ' -f 2) #-P abc
 
 # Signing Data
-echo "abc" | openssl pkeyutl -engine libtpm2tss -keyform engine -inkey ${HANDLE} -sign -in ${DIR}/mydata.txt -out ${DIR}/mysig -passin stdin
+#echo "abc" |
+openssl pkeyutl -engine libtpm2tss -keyform engine -inkey ${HANDLE} -sign -in ${DIR}/mydata.txt -out ${DIR}/mysig # -passin stdin
 # Get public key of handle
 tpm2_readpublic -c ${HANDLE} -o ${DIR}/mykey.pem -f pem
 
