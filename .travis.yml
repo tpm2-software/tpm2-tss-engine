@@ -22,14 +22,12 @@ addons:
     - autoconf-archive
     - automake
     - build-essential
-    - libgcrypt-dev
+    - libgcrypt20-dev
     - realpath
     - lcov
     - libssl-dev
     - uthash-dev
     - pandoc
-    - libcurl4-openssl-dev
-    - libtool
 
 install:
   - mkdir -p installdir/usr/local/bin
@@ -70,14 +68,6 @@ install:
   - make -j$(nproc)
   - make install DESTDIR=${PWD}/../installdir
   - rm ${PWD}/../installdir/usr/local/lib/*.la
-  - popd
-# Tpm2-tools
-  - git clone https://github.com/tpm2-software/tpm2-tools.git
-  - pushd tpm2-tools
-  - ./bootstrap
-  - ./configure
-  - make -j$(nproc)
-  - make install DESTDIR=${PWD}/../installdir
   - popd
 
 before_script:
