@@ -157,19 +157,8 @@ rsa_priv_enc(int flen,
     DBG("Padded digest data (size=%i):\n", digest.size);
     DBGBUF(&digest.buffer[0], digest.size);
 
-    if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
-      r = Esys_Initialize(&ectx, NULL, NULL);
-      ERRchktss(rsa_priv_enc, r, goto out);
-      r = Esys_Startup(ectx, TPM2_SU_CLEAR);
-      ERRchktss(rsa_priv_enc, r, goto out);
-      r = Esys_TR_FromTPMPublic(ectx, tpm2Data->handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
-      ERRchktss(rsa_priv_enc, r, goto out);
-      r = Esys_TR_SetAuth(ectx, ESYS_TR_RH_OWNER, &tpm2Data->userauth);
-      ERRchktss(rsa_priv_enc, r, goto error);
-    } else {
-      r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
-      ERRchktss(rsa_priv_enc, r, goto error);
-    }
+    r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
+    ERRchktss(rsa_priv_enc, r, goto error);
 
     DBG("Signing (via decrypt operation).\n");
     r = Esys_RSA_Decrypt(ectx, keyHandle,
@@ -261,19 +250,8 @@ rsa_priv_dec(int flen,
         goto error;
     }
 
-    if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
-      r = Esys_Initialize(&ectx, NULL, NULL);
-      ERRchktss(rsa_priv_dec, r, goto out);
-      r = Esys_Startup(ectx, TPM2_SU_CLEAR);
-      ERRchktss(rsa_priv_dec, r, goto out);
-      r = Esys_TR_FromTPMPublic(ectx, tpm2Data->handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
-      ERRchktss(rsa_priv_dec, r, goto out);
-      r = Esys_TR_SetAuth(ectx, ESYS_TR_RH_OWNER, &tpm2Data->userauth);
-      ERRchktss(rsa_priv_dec, r, goto out);
-    } else {
-      r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
-      ERRchktss(rsa_priv_dec, r, goto out);
-    }
+    r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
+    ERRchktss(rsa_priv_dec, r, goto out);
 
     r = Esys_RSA_Decrypt(ectx, keyHandle,
                          ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,

@@ -76,8 +76,9 @@ void ERR_error(int function, int reason, const char *file, int line);
 /* tpm2-tss-engine-common.c */
 #define TPM2TSS_F_tpm2tss_tpm2data_write        110
 #define TPM2TSS_F_tpm2tss_tpm2data_read         111
-#define TPM2TSS_F_init_tpm_primary      112
-#define TPM2TSS_F_init_tpm_key          113
+#define TPM2TSS_F_tpm2tss_tpm2data_readtpm      112
+#define TPM2TSS_F_init_tpm_primary      113
+#define TPM2TSS_F_init_tpm_key          114
 /* tpm2-tss-engine-ecc.c */
 #define TPM2TSS_F_ecdsa_sign    120
 #define TPM2TSS_F_populate_ecc          121
