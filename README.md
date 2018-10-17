@@ -110,6 +110,62 @@ openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -sign -in mydata -o
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -verify -in mydata -sigfile mysig
 ```
 
+## Self Signed certificate generate operation 
+The following sequence of commands creates self signed certificate using TPM key. 
+Openssl command mentions tpm2tss as engine and generate self signed certificate based on provided CSR 
+configuration information.
+```
+tpm2tss-genkey -a rsa rsa.tss
+Initializing
+Setting owner auth to empty auth.
+Generating RSA key for 2048 bits keysize.
+Establishing connection with TPM.
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-default.so 
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-tabrmd.so 
+Creating primary key under owner.
+Generating the RSA key inside the TPM.
+Generated the RSA key inside the TPM.
+
+openssl req -new -x509 -engine tpm2tss -key rsa.tss  -keyform engine  -out rsa.crt
+Initializing
+engine "tpm2tss" set.
+Loading private key rsa.tss
+get_auth called for object user key with ui_method 0xffe690
+Enter password for user key:
+password is 
+Loaded key uses alg-id 1
+Creating RSA key object.
+Created RSA key object.
+TPM2 Key loaded
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:IN
+State or Province Name (full name) [Some-State]:MAHARASHTRA
+Locality Name (eg, city) []:PUNE
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:SecureThings
+Organizational Unit Name (eg, section) []:Eng
+Common Name (e.g. server FQDN or YOUR name) []:webapp.securitydemos.net
+Email Address []:sachin.gole@securethings.ai
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-default.so 
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-tabrmd.so 
+rsa_priv_enc called for scheme 1 and input data(size=51):
+3031300d06096086480165030402010500042087b64a295bcf928a2d188133740fbea18b7754b5b4696e80b1a26f991130920a
+Padded digest data (size=256):
+0001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff003031300d06096086480165030402010500042087b64a295bcf928a2d188133740fbea18b7754b5b4696e80b1a26f991130920a
+Establishing connection with TPM.
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-default.so 
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-tabrmd.so 
+Creating primary key under owner.
+Loading key blob.
+Signing (via decrypt operation).
+Signature done (size=256):
+7f26538cf7cf83d3bd69497fedc407a5c75ebf63a6145cb04d4a175eedc5e3c05db95723a42208d7cadc997d4c6325c6f7f2c6e3c71bf952d7a28ca7550439bba3a0263d1f914ffc73d5da006cc22ce6dda82bb22a1de02a30b11d0e644f94a8139c74def6ad07605d32a73a155d678797eddb5604438d74c2f9bad73c4197f350ecf4b7ae7c3b89ea6bf845de03307fb0b8b91a4207d10992361a1ab07ba32ded61311e9982fc72ab9771156c16e44cb896971afd81dfc32ecabe68a30ea69d26aabd18e52e0ef42ebfcf10dcd6af2c16d54fffda44ab6454aaa2679ff82451939f014221b489a32b35ce7988dbe84c458856fa0d0be8d10486addb699f76b7
+```
 # Project layout
 ```
 ├── doc     : documentation and man pages
