@@ -121,6 +121,66 @@ error:
     return 0;
 }
 
+/** Create tpm2data from a TPM key
+ *
+ * Retrieve the public key of tpm2data from the TPM for a given handle.
+ * @param handle The TPM's key handle.
+ * @param tpm2Datap The data after read.
+ * @retval 1 on success
+ * @retval 0 on failure
+ */
+int
+tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
+{
+    TSS2_RC r;
+    TPM2_DATA *tpm2Data = NULL;
+    ESYS_TR keyHandle;
+    ESYS_CONTEXT *ectx;
+    TPM2B_PUBLIC *outPublic;
+
+    tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
+    if (tpm2Data == NULL) {
+        ERR(tpm2tss_tpm2data_readtpm, ERR_R_MALLOC_FAILURE);
+        goto error;
+    }
+    memset(tpm2Data, 0, sizeof(*tpm2Data));
+
+    tpm2Data->privatetype = KEY_TYPE_HANDLE;
+    tpm2Data->handle = handle;
+
+    r = Esys_Initialize(&ectx, NULL, NULL);
+    if (r) {
+        ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
+        goto error;
+    }
+
+    r = Esys_TR_FromTPMPublic(ectx, tpm2Data->handle, ESYS_TR_NONE,
+                              ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
+    if (r) {
+        ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
+        goto error;
+    }
+
+    r = Esys_ReadPublic(ectx, keyHandle, ESYS_TR_NONE, ESYS_TR_NONE,
+                        ESYS_TR_NONE, &outPublic, NULL, NULL);
+    if (r) {
+        ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
+        goto error;
+    }
+
+    Esys_TR_Close(ectx, &keyHandle);
+    Esys_Finalize(&ectx);
+    tpm2Data->pub = *outPublic;
+    free(outPublic);
+
+    *tpm2Datap = tpm2Data;
+    return 1;
+error:
+    if (tpm2Data) OPENSSL_free(tpm2Data);
+    return 0;
+}
+
+
 /** Deserialize tpm2data from disk
  *
  * Read the tpm2tss key data from a file using PEM encoding.
@@ -158,6 +218,8 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
         goto error;
     }
     memset(tpm2Data, 0, sizeof(*tpm2Data));
+
+    tpm2Data->privatetype = KEY_TYPE_BLOB;
 
     parent = ASN1_INTEGER_get(tpk->parent);
     if (parent != TPM2_RH_OWNER) {
@@ -282,19 +344,38 @@ init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
     ESYS_TR primaryHandle = ESYS_TR_NONE;
     *keyHandle = ESYS_TR_NONE;
 
-    r = init_tpm_primary(ctx, &primaryHandle);
-    ERRchktss(init_tpm_key, r, goto error);
+    if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
+        DBG("Establishing connection with TPM.\n");
+        r = Esys_Initialize(ctx, NULL, NULL);
+        ERRchktss(init_tpm_key, r, goto error);
 
-    DBG("Loading key blob.\n");
-    r = Esys_Load(*ctx, primaryHandle,
-                  ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                  &tpm2Data->priv, &tpm2Data->pub,
-                  keyHandle);
-    ERRchktss(init_tpm_key, r, goto error);
+        r = Esys_Startup(*ctx, TPM2_SU_CLEAR);
+        if (r == TPM2_RC_INITIALIZE)
+            DBG("TPM was already started up thus false positive failing in tpm2tss"
+                " log.\n");
+        else
+            ERRchktss(init_tpm_key, r, goto error);
 
-    r = Esys_FlushContext(*ctx, primaryHandle);
-    ERRchktss(rsa_priv_enc, r, goto error);
-    primaryHandle = ESYS_TR_NONE;
+        r = Esys_TR_FromTPMPublic(*ctx, tpm2Data->handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, keyHandle);
+        ERRchktss(init_tpm_key, r, goto error);
+    } else if (tpm2Data->privatetype == KEY_TYPE_BLOB) {
+        r = init_tpm_primary(ctx, &primaryHandle);
+        ERRchktss(init_tpm_key, r, goto error);
+
+        DBG("Loading key blob.\n");
+        r = Esys_Load(*ctx, primaryHandle,
+                      ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                      &tpm2Data->priv, &tpm2Data->pub,
+                      keyHandle);
+        ERRchktss(init_tpm_key, r, goto error);
+
+        r = Esys_FlushContext(*ctx, primaryHandle);
+        ERRchktss(rsa_priv_enc, r, goto error);
+        primaryHandle = ESYS_TR_NONE;
+    } else {
+        r = -1;
+        ERRchktss(init_tpm_key, r, goto error);
+    }
 
     r = Esys_TR_SetAuth(*ctx, *keyHandle, &tpm2Data->userauth);
     ERRchktss(init_tpm_key, r, goto error);
