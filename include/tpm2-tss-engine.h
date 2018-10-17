@@ -57,6 +57,9 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2data, const char *filename);
 int
 tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap);
 
+int
+tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap);
+
 EVP_PKEY *
 tpm2tss_rsa_makekey(TPM2_DATA *tpm2Data);
 
