@@ -30,8 +30,9 @@ addons:
     - pandoc
 
 install:
+  - git clean -xdf
   - mkdir -p installdir/usr/local/bin
-# OpenSSL 1.0.2
+# OpenSSL 1.0.2 / 1.1.0
   - git clone --branch $OPENSSL_BRANCH --depth=1 https://github.com/openssl/openssl.git
   - pushd openssl
   - ./config --prefix=/usr/local --openssldir=/usr/local/openssl shared
@@ -43,6 +44,15 @@ install:
         make install DESTDIR=${PWD}/../installdir
     fi
   - which openssl
+  - popd
+# libcurl
+  - git clone --depth=1 -b curl-7_61_1 https://github.com/curl/curl.git
+  - pushd curl
+  - ./buildconf
+  - ./configure CFLAGS=-I${PWD}/../installdir/usr/local/include LDFLAGS=-L${PWD}/../installdir/usr/local/lib
+  - make -j$(nproc)
+  - make install DESTDIR=${PWD}/../installdir
+  - rm ${PWD}/../installdir/usr/local/lib/*.la
   - popd
 # TPM Simulator
   - wget --no-check-certificate https://download.01.org/tpm2/ibmtpm974.tar.gz
@@ -60,14 +70,25 @@ install:
   - tar xJf autoconf-archive-2017.09.28.tar.xz
   - cp autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
 # TPM2-TSS
-  - git clone --depth=1 https://github.com/tpm2-software/tpm2-tss.git
+  - git clone --depth=1 -b 2.1.0 https://github.com/tpm2-software/tpm2-tss.git
   - pushd tpm2-tss
   - cp ../autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
   - ./bootstrap
-  - ./configure
+  - ./configure CFLAGS=-I${PWD}/../installdir/usr/local/include LDFLAGS=-L${PWD}/../installdir/usr/local/lib
   - make -j$(nproc)
   - make install DESTDIR=${PWD}/../installdir
   - rm ${PWD}/../installdir/usr/local/lib/*.la
+  - popd
+# tpm2-tools
+  - git clone --depth=1 https://github.com/tpm2-software/tpm2-tools.git
+  - pushd tpm2-tools
+  - mkdir m4 || true
+  - cp ../autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
+  - ./bootstrap
+  # Some workarounds for tpm2-tools with -Wno-XXX
+  - ./configure --disable-hardening CFLAGS="-I${PWD}/../installdir/usr/local/include -Wno-unused-value -Wno-missing-field-initializer" LDFLAGS=-L${PWD}/../installdir/usr/local/lib
+  - make -j$(nproc)
+  - make install DESTDIR=${PWD}/../installdir
   - popd
 
 before_script:
@@ -92,7 +113,7 @@ script:
   - make -j1 check
   - cat test-suite.log
   - make -j1 distcheck
-  - cat openssl-tpm2-engine-0.0.1/_build/test-suit.log || true
+  - cat config.log $(find -name test-suit.log) || true
   - popd
 
 after_success:
