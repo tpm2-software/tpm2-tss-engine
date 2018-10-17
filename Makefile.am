@@ -40,7 +40,7 @@ AM_LDADD        = $(TSS2_ESYS_LIBS) $(CRYPTO_LIBS) -ldl
 AM_DISTCHECK_CONFIGURE_FLAGS=--with-enginesdir=
 
 # Initialize empty variables to be extended throughout
-lib_LTLIBRARIES = 
+lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
 EXTRA_DIST =
 CLEANFILES =
@@ -102,6 +102,7 @@ TESTS = test/ecdsa.sh \
         test/rsasign.sh \
         test/failload.sh \
         test/failwrite.sh
+
 EXTRA_DIST += $(TESTS)
 
 # Adding user and developer information
