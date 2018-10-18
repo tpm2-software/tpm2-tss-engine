@@ -31,6 +31,7 @@
 #ifndef TPM2_TSS_ENGINE_COMMON_H
 #define TPM2_TSS_ENGINE_COMMON_H
 
+#include <tpm2-tss-engine.h>
 #include <tss2/tss2_mu.h>
 #include <tss2/tss2_esys.h>
 

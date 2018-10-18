@@ -180,8 +180,13 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
         }
     }
 
-    if (!get_auth("user key", ui, cb_data, &tpm2Data->userauth))
+    if (tpm2Data->emptyAuth) {
+        tpm2Data->userauth.size = 0;
+    } else {
+        if (!get_auth("user key", ui, cb_data, &tpm2Data->userauth)) {
             goto error;
+        }
+    }
 
     DBG("Loaded key uses alg-id %x\n", tpm2Data->pub.publicArea.type);
 

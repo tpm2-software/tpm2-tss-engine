@@ -105,6 +105,7 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
         goto error;
     }
 
+    tpk->emptyAuth = !!tpm2Data->emptyAuth;
     /* Only TPM2_RH_OWNER is supported for now */
     ASN1_INTEGER_set(tpk->parent, TPM2_RH_OWNER);
     ASN1_STRING_set(tpk->privkey, &privbuf[0], privbuf_len);
@@ -220,6 +221,8 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
     memset(tpm2Data, 0, sizeof(*tpm2Data));
 
     tpm2Data->privatetype = KEY_TYPE_BLOB;
+
+    tpm2Data->emptyAuth = tpk->emptyAuth;
 
     parent = ASN1_INTEGER_get(tpk->parent);
     if (parent != TPM2_RH_OWNER) {
