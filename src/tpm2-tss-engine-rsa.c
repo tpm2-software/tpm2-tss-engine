@@ -512,7 +512,8 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password)
         inSensitive.sensitive.userAuth.size = strlen(password);
         memcpy(&inSensitive.sensitive.userAuth.buffer[0], password,
                strlen(password));
-    }
+    } else
+        tpm2Data->emptyAuth = 1;
 
     r = init_tpm_primary(&ectx, &primaryHandle);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);

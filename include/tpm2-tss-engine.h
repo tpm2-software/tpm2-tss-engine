@@ -40,6 +40,7 @@ typedef enum {
 } KEY_TYPE;
 
 typedef struct {
+    int emptyAuth;
     TPM2B_DIGEST userauth;
     TPM2B_PUBLIC pub;
     union {
