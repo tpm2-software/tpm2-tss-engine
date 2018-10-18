@@ -97,6 +97,7 @@ tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS) -ltss2-tcti-mssim -ltss2-tcti-device
 
 ### Tests ###
 TESTS = test/ecdsa.sh \
+        test/ecdsa-emptyauth.sh \
         test/rand.sh \
         test/rsadecrypt.sh \
         test/rsasign.sh \
