@@ -106,6 +106,8 @@ EXTRA_DIST += $(TESTS)
 
 # Adding user and developer information
 EXTRA_DIST += \
+    CHANGELOG.md \
+    CONTRIBUTING.md \
     INSTALL.md \
     LICENSE \
     README.md
