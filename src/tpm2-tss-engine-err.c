@@ -66,6 +66,7 @@ static ERR_STRING_DATA TPM2TSS_f[] = {
     ERR_F(rsa_priv_dec),
     ERR_F(tpm2tss_rsa_genkey),
     ERR_F(populate_rsa),
+    {0, NULL}
 };
 
 static ERR_STRING_DATA TPM2TSS_r[] = {
@@ -87,6 +88,7 @@ static ERR_STRING_DATA TPM2TSS_r[] = {
     /* TPM/TSS Reasons that are useful to the user */
     ERR_R(TPM2TSS_R_AUTH_FAILURE, Authorization failed),
     ERR_R(TPM2TSS_R_OWNER_AUTH_FAILED, Owner authorization failed),
+    {0, NULL}
 };
 #endif /* OPENSSL_NO_ERR */
 
