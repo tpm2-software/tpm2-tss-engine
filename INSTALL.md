@@ -25,6 +25,8 @@ sudo apt -y install \
   ruby-ronn
 git clone --depth=1 http://www.github.com/tpm2-software/tpm2-tss
 cd tpm2-tss
+./bootstrap
+./configure
 make -j$(nproc)
 sudo make install
 ```
