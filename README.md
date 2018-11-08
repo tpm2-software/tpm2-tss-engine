@@ -72,6 +72,12 @@ openssl engine -t -c tpm2tss
 A set of 10 random bytes can be retrieved using
 ```
 openssl rand -engine tpm2tss -hex 10
+engine "tpm2tss" set.
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-default.so
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-tabrmd.so
+40ac9191079e490d17b7
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-default.so
+WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not load TCTI file: libtss2-tcti-tabrmd.so
 ```
 
 ## RSA operations
