@@ -13,7 +13,7 @@ env:
   global:
   - PATH="${PWD}/installdir/usr/local/bin:${PATH}"
   - PKG_CONFIG_PATH="${PWD}/installdir/usr/local/lib/pkgconfig:/usr/lib/pkgconfig"
-  - LD_LIBRARY_PATH="${PWD}/installdir/usr/local/lib:${PWD}/build/.libs:${PWD}/build/openssl-tpm2-engine-0.0.1/_build/.libs:/usr/lib"
+  - LD_LIBRARY_PATH="${PWD}/installdir/usr/local/lib:/usr/lib"
 
 addons:
   apt:

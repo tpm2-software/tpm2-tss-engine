@@ -45,7 +45,7 @@ Instructions to build and install tpm2-tss are available in the
 ## Development prefixes
 In order to use this engine without `make install` for testing call:
 ```
-export LD_LIBRAY_PATH=${TPM2TSS}/src/tss2-{tcti,mu,sys,esys}/.libs
+export LD_LIBRAY_PATH=${TPM2TSS}/src/tss2-{tcti,mu,sys,esys}/.libs:${PWD}/.libs
 export OPENSSL_ENGINES=${PWD}/.libs
 export PATH=${PWD}:${PATH}
 export PKG_CONFIG_PATH=$PWD/../tpm2-tss/lib
