@@ -4,6 +4,7 @@ set -eufx
 
 export LANG=C
 export OPENSSL_ENGINES=${PWD}/.libs
+export LD_LIBRARY_PATH=$OPENSSL_ENGINES:${LD_LIBRARY_PATH-}
 export PATH=${PWD}:${PATH}
 
 DIR=$(mktemp -d)
