@@ -108,12 +108,18 @@ Note: `mydata` must not exceed the size of the RSA key, since these operation
 do not perform any hashing of the input data.
 
 ## ECDSA operations
-The following sequence of commands creates an ECDSA key using the TPM, exports
-the public key, signs a data file using the TPM and validates the signature:
+The following sequence of commands creates an ECDSA key using the TPM, signs
+a data file using the TPM and validates the signature:
 ```
 tpm2tss-genkey -a ecdsa mykey
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -sign -in mydata -out mysig
 openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -verify -in mydata -sigfile mysig
+```
+
+To export the public key use:
+
+```
+openssl ec -engine tpm2tss -inform engine -in mykey -pubout -outform pem -out mykey.pub
 ```
 
 ## Self Signed certificate generate operation 
