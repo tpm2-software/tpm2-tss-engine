@@ -435,6 +435,7 @@ tpm2tss_rsa_makekey(TPM2_DATA *tpm2Data)
 
     if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
         ERR(populate_rsa, TPM2TSS_R_GENERAL_FAILURE);
+        RSA_free(rsa);
         goto error;
     }
 
@@ -450,8 +451,7 @@ tpm2tss_rsa_makekey(TPM2_DATA *tpm2Data)
 
     return pkey;
 error:
-    if (pkey) EVP_PKEY_free(pkey);
-    if (rsa) RSA_free(rsa);
+    EVP_PKEY_free(pkey);
     return NULL;
 }
 
