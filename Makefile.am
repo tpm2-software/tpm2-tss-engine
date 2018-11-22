@@ -117,7 +117,7 @@ EXTRA_DIST += \
 # Generate the AUTHORS file from git log
 AUTHORS:
 	$(AM_V_GEN)git log --format='%aN <%aE>' | \
-			grep -v 'users.noreply.github.com' | sort -unr > $@
+			grep -v 'users.noreply.github.com' | sort -u > $@
 EXTRA_DIST += AUTHORS
 CLEANFILES += AUTHORS
 
