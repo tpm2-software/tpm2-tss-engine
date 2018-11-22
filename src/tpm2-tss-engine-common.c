@@ -135,8 +135,8 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
 {
     TSS2_RC r;
     TPM2_DATA *tpm2Data = NULL;
-    ESYS_TR keyHandle;
-    ESYS_CONTEXT *ectx;
+    ESYS_TR keyHandle = ESYS_TR_NONE;
+    ESYS_CONTEXT *ectx = NULL;
     TPM2B_PUBLIC *outPublic;
 
     tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
@@ -177,6 +177,9 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     *tpm2Datap = tpm2Data;
     return 1;
 error:
+    if (keyHandle != ESYS_TR_NONE)
+        Esys_TR_Close(ectx, &keyHandle);
+    Esys_Finalize(&ectx);
     if (tpm2Data) OPENSSL_free(tpm2Data);
     return 0;
 }
@@ -292,6 +295,7 @@ init_tpm_primary(ESYS_CONTEXT **ctx, ESYS_TR *primaryHandle)
 {
     TSS2_RC r;
     *primaryHandle = ESYS_TR_NONE;
+    *ctx = NULL;
 
     DBG("Establishing connection with TPM.\n");
     r = Esys_Initialize(ctx, NULL, NULL);
@@ -346,6 +350,7 @@ init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
     TSS2_RC r;
     ESYS_TR primaryHandle = ESYS_TR_NONE;
     *keyHandle = ESYS_TR_NONE;
+    *ctx = NULL;
 
     if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
         DBG("Establishing connection with TPM.\n");

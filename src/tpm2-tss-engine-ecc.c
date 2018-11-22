@@ -130,7 +130,7 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
     DBGBUF(dgst, dgst_len);
 
 	TSS2_RC r;
-    ESYS_CONTEXT *ectx;
+    ESYS_CONTEXT *ectx = NULL;
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPMT_SIGNATURE *sig = NULL;
 
