@@ -321,11 +321,13 @@ tpm2tss_ecc_makekey(TPM2_DATA *tpm2Data)
     if (!EC_KEY_set_method(eckey, ecc_methods)) {
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
         ERR(tpm2tss_ecc_makekey, TPM2TSS_R_GENERAL_FAILURE);
+        EC_KEY_free(eckey);
         goto error;
     }
 
     if (!EVP_PKEY_assign_EC_KEY(pkey, eckey)) {
         ERR(tpm2tss_ecc_makekey, TPM2TSS_R_GENERAL_FAILURE);
+        EC_KEY_free(eckey);
         goto error;
     }
 
@@ -342,7 +344,6 @@ tpm2tss_ecc_makekey(TPM2_DATA *tpm2Data)
     return pkey;
 error:
     EVP_PKEY_free(pkey);
-    EC_KEY_free(eckey);
     return NULL;
 }
 
