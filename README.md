@@ -178,6 +178,21 @@ Signing (via decrypt operation).
 Signature done (size=256):
 7f26538cf7cf83d3bd69497fedc407a5c75ebf63a6145cb04d4a175eedc5e3c05db95723a42208d7cadc997d4c6325c6f7f2c6e3c71bf952d7a28ca7550439bba3a0263d1f914ffc73d5da006cc22ce6dda82bb22a1de02a30b11d0e644f94a8139c74def6ad07605d32a73a155d678797eddb5604438d74c2f9bad73c4197f350ecf4b7ae7c3b89ea6bf845de03307fb0b8b91a4207d10992361a1ab07ba32ded61311e9982fc72ab9771156c16e44cb896971afd81dfc32ecabe68a30ea69d26aabd18e52e0ef42ebfcf10dcd6af2c16d54fffda44ab6454aaa2679ff82451939f014221b489a32b35ce7988dbe84c458856fa0d0be8d10486addb699f76b7
 ```
+
+# TLS and s_server
+This engine can be used in all places where OpenSSL is used to create a TLS
+secure channel connection. You have can specify the command
+```
+./tpm2tss-genkey -a rsa rsa.tss
+openssl req -new -x509 -engine tpm2tss -key rsa.tss  -keyform engine  -out rsa.crt
+openssl s_server -cert rsa.crt -key rsa.tss -keyform engine -engine tpm2tss -accept 8443
+```
+
+For ECDSA keys however, the Hash algorithm needs to be specified because the TPM
+does not support SHA512. You can blacklisting SHA512 universally. That is
+possible via openssl.cnf. See the "SignatureAlgorithms" configuration file command on this page:
+https://www.openssl.org/docs/man1.1.1/man3/SSL_CONF_cmd.html
+
 # Project layout
 ```
 ├── doc     : documentation and man pages
