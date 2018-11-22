@@ -50,7 +50,7 @@
 static int
 rand_bytes(unsigned char *buf, int num)
 {
-    ESYS_CONTEXT *ectx;
+    ESYS_CONTEXT *ectx = NULL;
     TSS2_RC r;
 
     r = Esys_Initialize(&ectx, NULL, NULL);
