@@ -28,6 +28,7 @@ addons:
     - libssl-dev
     - uthash-dev
     - pandoc
+    - expect
 
 install:
   - git clean -xdf
