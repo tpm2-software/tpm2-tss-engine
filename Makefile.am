@@ -103,7 +103,8 @@ TESTS = test/ecdsa.sh \
         test/rsasign.sh \
         test/failload.sh \
         test/failwrite.sh \
-        test/rsasign_persistent.sh
+        test/rsasign_persistent.sh \
+        test/rsasign_persistent_emptyauth.sh
 EXTRA_DIST += $(TESTS)
 
 # Adding user and developer information

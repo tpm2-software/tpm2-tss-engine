@@ -138,6 +138,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     ESYS_TR keyHandle = ESYS_TR_NONE;
     ESYS_CONTEXT *ectx = NULL;
     TPM2B_PUBLIC *outPublic;
+    ESYS_TR session = ESYS_TR_NONE;
 
     tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
@@ -169,7 +170,58 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         goto error;
     }
 
+    /* If the persistent key has the NODA flag set, we check whether it does
+       have an empty authValue. If NODA is not set, then we don't check because
+       that would increment the DA lockout counter */
+    if ((outPublic->publicArea.objectAttributes | TPMA_OBJECT_NODA) != 0) {
+        TPMT_SYM_DEF sym = {.algorithm = TPM2_ALG_AES,
+                            .keyBits = {.aes = 128},
+                            .mode = {.aes = TPM2_ALG_CFB}
+        };
+
+        /* We do the check by starting a bound audit session and executing a
+           very cheap command. */
+        r = Esys_StartAuthSession(ectx, ESYS_TR_NONE, keyHandle,
+                                  ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
+                                  NULL, TPM2_SE_HMAC, &sym, TPM2_ALG_SHA256,
+                                  &session);
+        /* Though this response code is sub-optimal, it's the only way to
+           detect the bug in ESYS. */
+        if (r == TSS2_ESYS_RC_GENERAL_FAILURE) {
+            DBG("Running tpm2-tss < 2.2 which has a bug here. Requiring auth.");
+            tpm2Data->emptyAuth = 0;
+            goto session_error;
+        } else if (r) {
+            ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
+            goto error;
+        }
+        Esys_TRSess_SetAttributes(ectx, session,
+                                  TPMA_SESSION_ENCRYPT, TPMA_SESSION_ENCRYPT);
+        Esys_TRSess_SetAttributes(ectx, session,
+                    TPMA_SESSION_CONTINUESESSION, TPMA_SESSION_CONTINUESESSION);
+
+        r = Esys_ReadPublic(ectx, keyHandle, session, ESYS_TR_NONE,
+                            ESYS_TR_NONE, &outPublic, NULL, NULL);
+
+        /* tpm2-tss < 2.2 has some bugs. (1) it may miscalculate the auth from
+           above leading to a password query in case of empty auth and (2) it
+           may return an error because the object's auth value is "\0". */
+        if (r == TSS2_RC_SUCCESS) {
+            DBG("Object does not require auth");
+            tpm2Data->emptyAuth = 1;
+        } else if (r == (TPM2_RC_BAD_AUTH | TPM2_RC_S | TPM2_RC_1)) {
+            DBG("Object does require auth");
+            tpm2Data->emptyAuth = 0;
+        } else  {
+            ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
+            goto error;
+        }
+    }
+
+    if (session != ESYS_TR_NONE) Esys_FlushContext(ectx, session);
+session_error:
     Esys_TR_Close(ectx, &keyHandle);
+
     Esys_Finalize(&ectx);
     tpm2Data->pub = *outPublic;
     free(outPublic);
@@ -177,6 +229,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     *tpm2Datap = tpm2Data;
     return 1;
 error:
+    if (session != ESYS_TR_NONE) Esys_FlushContext(ectx, session);
     if (keyHandle != ESYS_TR_NONE)
         Esys_TR_Close(ectx, &keyHandle);
     Esys_Finalize(&ectx);
