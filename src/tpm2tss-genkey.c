@@ -56,17 +56,21 @@ char *help =
     "    -h, --help      print help\n"
     "    -o, --ownerpw   password for the owner hierarchy (default: none)\n"
     "    -p, --password  password for the created key (default: none)\n"
+    "    -P, --parent    specific handle for the parent key (default: none)\n"
     "    -s, --keysize   key size in bits for rsa (default: 2048)\n"
     "    -v, --verbose   print verbose messages\n"
     "\n";
 
-static struct option long_options[] = {
+static const char *optstr = "a:c:e:ho:p:P:s:v";
+
+static const struct option long_options[] = {
     {"alg",      required_argument, 0, 'a'},
     {"curve",    required_argument, 0, 'c'},
     {"exponent", required_argument, 0, 'e'},
     {"help",     no_argument,       0, 'h'},
     {"ownerpw",  required_argument, 0, 'o'},
     {"password", required_argument, 0, 'p'},
+    {"parent",   required_argument, 0, 'P'},
     {"keysize",  required_argument, 0, 's'},
     {"verbose",  no_argument,       0, 'v'},
     {0,          0,                 0,  0 }
@@ -79,6 +83,7 @@ static struct opt {
     int exponent;
     char *ownerpw;
     char *password;
+    TPM2_HANDLE parent;
     int keysize;
     int verbose;
 } opt;
@@ -102,13 +107,14 @@ parse_opts(int argc, char **argv)
     opt.exponent = 65537;
     opt.ownerpw = NULL;
     opt.password = NULL;
+    opt.parent = 0;
     opt.keysize = 2048;
     opt.verbose = 0;
 
     /* parse the options */
     int c;
     int opt_idx = 0;
-    while (-1 != (c = getopt_long(argc, argv, "a:c:e:ho:p:s:v",
+    while (-1 != (c = getopt_long(argc, argv, optstr,
                                   long_options, &opt_idx))) {
         switch(c) {
         case 'h':
@@ -150,6 +156,14 @@ parse_opts(int argc, char **argv)
             break;
         case 'p':
             opt.password = optarg;
+            break;
+        case 'P':
+            if (sscanf(optarg, "%x", &opt.parent) != 1 &&
+                sscanf(optarg, "0x%x", &opt.parent) != 1 &&
+                sscanf(optarg, "%i", &opt.parent) != 1) {
+                ERR("Error parsing parent handle");
+                exit(1);
+            }
             break;
         case 's':
             if (sscanf(optarg, "%i", &opt.keysize) != 1) {
@@ -206,7 +220,7 @@ genkey_rsa()
         BN_free(e);
         return NULL;
     }
-    if (!tpm2tss_rsa_genkey(rsa, opt.keysize, e, opt.password)) {
+    if (!tpm2tss_rsa_genkey(rsa, opt.keysize, e, opt.password, opt.parent)) {
         BN_free(e);
         RSA_free(rsa);
         ERR("Error: Generating key failed\n");
@@ -246,7 +260,7 @@ genkey_ecdsa()
         ERR("out of memory\n");
         return NULL;
     }
-    if (!tpm2tss_ecc_genkey(eckey, opt.curve, opt.password)) {
+    if (!tpm2tss_ecc_genkey(eckey, opt.curve, opt.password, opt.parent)) {
         EC_KEY_free(eckey);
         ERR("Error: Generating key failed\n");
         return NULL;

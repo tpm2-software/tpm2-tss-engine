@@ -43,11 +43,12 @@ typedef struct {
     int emptyAuth;
     TPM2B_DIGEST userauth;
     TPM2B_PUBLIC pub;
+    TPM2_HANDLE parent;
+    KEY_TYPE privatetype;
     union {
       TPM2B_PRIVATE priv;
       TPM2_HANDLE handle;
     };
-    KEY_TYPE privatetype;
 } TPM2_DATA;
 
 #define TPM2TSS_SET_OWNERAUTH ENGINE_CMD_BASE
@@ -65,13 +66,15 @@ EVP_PKEY *
 tpm2tss_rsa_makekey(TPM2_DATA *tpm2Data);
 
 int
-tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password);
+tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
+                   TPM2_HANDLE parentHandle);
 
 EVP_PKEY *
 tpm2tss_ecc_makekey(TPM2_DATA *tpm2Data);
 
 int
-tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password);
+tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
+                   TPM2_HANDLE parentHandle);
 
 TPM2_DATA *
 tpm2tss_ecc_getappdata(EC_KEY *key);
