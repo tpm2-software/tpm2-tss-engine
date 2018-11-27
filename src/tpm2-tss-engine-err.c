@@ -52,7 +52,7 @@ static ERR_STRING_DATA TPM2TSS_f[] = {
     ERR_F(tpm2tss_tpm2data_write),
     ERR_F(tpm2tss_tpm2data_read),
     ERR_F(tpm2tss_tpm2data_readtpm),
-    ERR_F(init_tpm_primary),
+    ERR_F(init_tpm_parent),
     ERR_F(init_tpm_key),
     /* tpm2-tss-engine-ecc.c */
     ERR_F(ecdsa_sign),

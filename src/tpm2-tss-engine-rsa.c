@@ -467,13 +467,14 @@ error:
  * @retval 0 on failure
  */
 int
-tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password)
+tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
+                   TPM2_HANDLE parentHandle)
 {
     DBG("Generating RSA key for %i bits keysize.\n", bits);
 
     TSS2_RC r = TSS2_RC_SUCCESS;
     ESYS_CONTEXT *ectx = NULL;
-    ESYS_TR primaryHandle = ESYS_TR_NONE;
+    ESYS_TR parent = ESYS_TR_NONE;
     TPM2B_PUBLIC *keyPublic = NULL;
     TPM2B_PRIVATE *keyPrivate = NULL;
     TPM2_DATA *tpm2Data = NULL;
@@ -515,12 +516,14 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password)
     } else
         tpm2Data->emptyAuth = 1;
 
-    r = init_tpm_primary(&ectx, &primaryHandle);
+    r = init_tpm_parent(&ectx, parentHandle, &parent);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
+
+    tpm2Data->parent = parentHandle;
 
     DBG("Generating the RSA key inside the TPM.\n");
 
-    r = Esys_Create(ectx, primaryHandle,
+    r = Esys_Create(ectx, parent,
                     ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
                     &inSensitive, &inPublic, &allOutsideInfo, &allCreationPCR,
                     &keyPrivate, &keyPublic, NULL, NULL, NULL);
@@ -550,8 +553,8 @@ end:
     free(keyPrivate);
     free(keyPublic);
 
-    if (primaryHandle != ESYS_TR_NONE)
-        Esys_FlushContext(ectx, primaryHandle);
+    if (parent != ESYS_TR_NONE && !parentHandle)
+        Esys_FlushContext(ectx, parent);
 
     Esys_Finalize(&ectx);
 
