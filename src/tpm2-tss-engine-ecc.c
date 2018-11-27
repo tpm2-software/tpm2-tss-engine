@@ -406,13 +406,14 @@ tpm2tss_ecc_setappdata(EC_KEY *key, TPM2_DATA *tpm2Data)
  * @retval 0 on failure
  */
 int
-tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password)
+tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
+                   TPM2_HANDLE parentHandle)
 {
     DBG("GenKey for ecdsa.\n");
 
     TSS2_RC r;
     ESYS_CONTEXT *ectx = NULL;
-    ESYS_TR primaryHandle = ESYS_TR_NONE;
+    ESYS_TR parent = ESYS_TR_NONE;
     TPM2B_PUBLIC *keyPublic = NULL;
     TPM2B_PRIVATE *keyPrivate = NULL;
     TPM2_DATA *tpm2Data = NULL;
@@ -452,12 +453,14 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password)
     } else
         tpm2Data->emptyAuth = 1;
 
-    r = init_tpm_primary(&ectx, &primaryHandle);
+    r = init_tpm_parent(&ectx, parentHandle, &parent);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
+
+    tpm2Data->parent = parentHandle;
 
     DBG("Generating the ECC key inside the TPM.\n");
 
-    r = Esys_Create(ectx, primaryHandle,
+    r = Esys_Create(ectx, parent,
                     ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
                     &inSensitive, &inPublic, &allOutsideInfo, &allCreationPCR,
                     &keyPrivate, &keyPublic, NULL, NULL, NULL);
@@ -488,8 +491,8 @@ end:
     free(keyPrivate);
     free(keyPublic);
 
-    if (primaryHandle != ESYS_TR_NONE)
-        Esys_FlushContext(ectx, primaryHandle);
+    if (parent != ESYS_TR_NONE && !parentHandle)
+        Esys_FlushContext(ectx, parent);
 
     Esys_Finalize(&ectx);
 

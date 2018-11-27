@@ -13,6 +13,8 @@ echo -n "abcde12345abcde12345">${DIR}/mydata.txt
 echo "Generating primary key"
 PARENT_CTX=${DIR}/primary_owner_key.ctx
 
+tpm2_startup -T mssim -c || true
+
 tpm2_createprimary -T mssim -a o -g sha256 -G rsa -o ${PARENT_CTX}
 tpm2_flushcontext -T mssim -t
 
