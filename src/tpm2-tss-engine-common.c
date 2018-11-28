@@ -179,7 +179,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     /* If the persistent key has the NODA flag set, we check whether it does
        have an empty authValue. If NODA is not set, then we don't check because
        that would increment the DA lockout counter */
-    if ((outPublic->publicArea.objectAttributes | TPMA_OBJECT_NODA) != 0) {
+    if ((outPublic->publicArea.objectAttributes & TPMA_OBJECT_NODA) != 0) {
         TPMT_SYM_DEF sym = {.algorithm = TPM2_ALG_AES,
                             .keyBits = {.aes = 128},
                             .mode = {.aes = TPM2_ALG_CFB}
