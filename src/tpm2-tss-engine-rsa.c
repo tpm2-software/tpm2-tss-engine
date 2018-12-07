@@ -187,7 +187,7 @@ out:
         Esys_FlushContext(ectx, keyHandle);
       }
     }
-    Esys_Finalize(&ectx);
+    esys_free(&ectx);
     return (r == TSS2_RC_SUCCESS)? ret : 0;
 }
 
@@ -280,7 +280,7 @@ out:
       }
     }
 
-    Esys_Finalize(&ectx);
+    esys_free(&ectx);
     return (r == TSS2_RC_SUCCESS)? flen : 0;
 }
 
@@ -556,7 +556,7 @@ end:
     if (parent != ESYS_TR_NONE && !parentHandle)
         Esys_FlushContext(ectx, parent);
 
-    Esys_Finalize(&ectx);
+    esys_free(&ectx);
 
     return (r == TSS2_RC_SUCCESS);
 }

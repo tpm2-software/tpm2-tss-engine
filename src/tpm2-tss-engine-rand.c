@@ -53,7 +53,7 @@ rand_bytes(unsigned char *buf, int num)
     ESYS_CONTEXT *ectx = NULL;
     TSS2_RC r;
 
-    r = Esys_Initialize(&ectx, NULL, NULL);
+    r = esys_init(&ectx);
     ERRchktss(rand_bytes, r, goto end);
 
     r = Esys_Startup(ectx, TPM2_SU_CLEAR);
@@ -74,7 +74,7 @@ rand_bytes(unsigned char *buf, int num)
         free(b);
     }
 
-    Esys_Finalize(&ectx);
+    esys_free(&ectx);
 
 end:
     return (r == TSS2_RC_SUCCESS);

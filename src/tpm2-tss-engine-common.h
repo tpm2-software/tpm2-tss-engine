@@ -47,6 +47,9 @@ int init_ecc(ENGINE *e);
 int init_rand(ENGINE *e);
 int init_rsa(ENGINE *e);
 
+TSS2_RC esys_init( ESYS_CONTEXT **ectx_p);
+TSS2_RC esys_free( ESYS_CONTEXT **ectx_p);
+
 TSS2_RC init_tpm_parent(ESYS_CONTEXT **ctx, uint32_t parentHandle,
                         ESYS_TR *parent);
 TSS2_RC init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle,

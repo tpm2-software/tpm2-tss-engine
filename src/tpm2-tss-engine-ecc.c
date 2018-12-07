@@ -215,7 +215,7 @@ out:
         ret = NULL;
     }
 
-    Esys_Finalize(&ectx);
+    esys_free(&ectx);
     return (r == TSS2_RC_SUCCESS)? ret : NULL;
 }
 
@@ -494,7 +494,7 @@ end:
     if (parent != ESYS_TR_NONE && !parentHandle)
         Esys_FlushContext(ectx, parent);
 
-    Esys_Finalize(&ectx);
+    esys_free(&ectx);
 
     return (r == TSS2_RC_SUCCESS);
 }

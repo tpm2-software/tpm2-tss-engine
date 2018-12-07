@@ -52,6 +52,60 @@ IMPLEMENT_ASN1_FUNCTIONS(TSSPRIVKEY);
 IMPLEMENT_PEM_write_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY);
 IMPLEMENT_PEM_read_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY);
 
+extern TSS2_RC tcti_get_ctx(const char *opts, TSS2_TCTI_CONTEXT **ctx_p);
+extern TSS2_RC tcti_free_ctx(TSS2_TCTI_CONTEXT **ctx_p);
+
+/** Initialize the Esys API context
+ *
+ */
+TSS2_RC
+esys_init( ESYS_CONTEXT **ectx_p)
+{
+    TSS2_RC r;
+    if (!ectx_p) {
+        ERR(esys_init, TPM2TSS_R_GENERAL_FAILURE);
+        r = TSS2_BASE_RC_BAD_REFERENCE;
+    } else {
+        TSS2_TCTI_CONTEXT *tcti_ctx;
+        r = tcti_get_ctx(NULL, &tcti_ctx);
+        if (TSS2_RC_SUCCESS != r) {
+            ERR(esys_init, TPM2TSS_R_GENERAL_FAILURE);
+        } else {
+            r = Esys_Initialize(ectx_p, tcti_ctx, NULL);
+            if (TSS2_RC_SUCCESS != r) {
+                ERR(esys_init, TPM2TSS_R_GENERAL_FAILURE);
+                tcti_free_ctx(&tcti_ctx);
+            }
+        }
+    }
+    return r;
+}
+
+/** Finalize the Esys API context
+ *
+ */
+TSS2_RC
+esys_free( ESYS_CONTEXT **ectx_p)
+{
+    TSS2_RC r;
+    TSS2_TCTI_CONTEXT *tcti_ctx;
+    if (!ectx_p || !*ectx_p) {
+        ERR(esys_free, TPM2TSS_R_GENERAL_FAILURE);
+        r = TSS2_BASE_RC_BAD_REFERENCE;
+    } else {
+        r = Esys_GetTcti(*ectx_p, &tcti_ctx);
+        if (TSS2_RC_SUCCESS != r) {
+            ERR(esys_free, TPM2TSS_R_GENERAL_FAILURE);
+        } else {
+            Esys_Finalize(ectx_p);
+            r = tcti_free_ctx(&tcti_ctx);
+            if (TSS2_RC_SUCCESS != r) {
+                ERR(esys_free, TPM2TSS_R_GENERAL_FAILURE);
+            }
+        }
+    }
+    return r;
+}
 
 /** Serialize tpm2data onto disk
  *
@@ -149,7 +203,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     tpm2Data->privatetype = KEY_TYPE_HANDLE;
     tpm2Data->handle = handle;
 
-    r = Esys_Initialize(&ectx, NULL, NULL);
+    r = esys_init(&ectx);
     if (r) {
         ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
         goto error;
@@ -228,7 +282,8 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
 session_error:
     Esys_TR_Close(ectx, &keyHandle);
 
-    Esys_Finalize(&ectx);
+    esys_free(&ectx);
+
     tpm2Data->pub = *outPublic;
     free(outPublic);
 
@@ -356,7 +411,7 @@ init_tpm_parent(ESYS_CONTEXT **ctx, TPM2_HANDLE parentHandle, ESYS_TR *parent)
     *ctx = NULL;
 
     DBG("Establishing connection with TPM.\n");
-    r = Esys_Initialize(ctx, NULL, NULL);
+    r = esys_init(ctx);
     ERRchktss(init_tpm_parent, r, goto error);
 
     r = Esys_Startup(*ctx, TPM2_SU_CLEAR);
@@ -397,7 +452,7 @@ error:
         Esys_FlushContext(*ctx, *parent);
     *parent = ESYS_TR_NONE;
 
-    Esys_Finalize(ctx);
+    esys_free(ctx);
     return r;
 }
 
@@ -422,7 +477,7 @@ init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
 
     if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
         DBG("Establishing connection with TPM.\n");
-        r = Esys_Initialize(ctx, NULL, NULL);
+        r = esys_init(ctx);
         ERRchktss(init_tpm_key, r, goto error);
 
         r = Esys_Startup(*ctx, TPM2_SU_CLEAR);
@@ -478,6 +533,6 @@ error:
         Esys_FlushContext(*ctx, *keyHandle);
     *keyHandle = ESYS_TR_NONE;
 
-    Esys_Finalize(ctx);
+    esys_free(ctx);
     return r;
 }
