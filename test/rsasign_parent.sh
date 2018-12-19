@@ -6,6 +6,8 @@ export OPENSSL_ENGINES=${PWD}/.libs
 export LD_LIBRARY_PATH=$OPENSSL_ENGINES:${LD_LIBRARY_PATH-}
 export PATH=${PWD}:${PATH}
 
+PHANDLE=0x81010001
+
 DIR=$(mktemp -d)
 echo -n "abcde12345abcde12345">${DIR}/mydata.txt
 
@@ -15,12 +17,10 @@ PARENT_CTX=${DIR}/primary_owner_key.ctx
 
 tpm2_startup -T mssim -c || true
 
-tpm2_createprimary -T mssim -a o -g sha256 -G rsa -o ${PARENT_CTX}
-tpm2_flushcontext -T mssim -t
+tpm2_createprimary -T mssim -H o -g sha256 -G rsa -C ${PARENT_CTX}
 
 # Load primary key to persistent handle
-HANDLE=$(tpm2_evictcontrol -T mssim -a o -c ${PARENT_CTX} | cut -d ' ' -f 2)
-tpm2_flushcontext -T mssim -t
+HANDLE=$(tpm2_evictcontrol -T mssim -A o -c ${PARENT_CTX} -S ${PHANDLE} | cut -d ' ' -f 2)
 
 # Generating a key underneath the persistent parent
 tpm2tss-genkey -a rsa -s 2048 -p abc -P ${HANDLE} ${DIR}/mykey
