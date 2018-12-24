@@ -75,6 +75,12 @@ AC_ARG_ENABLE([debug],
 AS_IF([test "x$enable_debug" != "xno"],
       AC_DEFINE_UNQUOTED([DEBUG], [1], ["Debug output enabled"]))
 
+AC_ARG_ENABLE([tctienvvar],
+    [AS_HELP_STRING([--enable-tctienvvar],
+                        [Set the TCTI option from an environment variable])],
+    [AC_DEFINE([ENABLE_TCTIENVVAR], [1])],
+    )
+
 AC_CONFIG_FILES([Makefile])
 
 AX_ADD_COMPILER_FLAG([-std=c99])
