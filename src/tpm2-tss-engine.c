@@ -261,6 +261,18 @@ init_engine(ENGINE *e) {
 
     int rc;
 
+#ifdef ENABLE_TCTIENVVAR
+    /*  Set the default TCTI option from the environment */
+    char *tctienvvar = getenv("TPM2TSSENGINE_TCTI");
+    if (tctienvvar) {
+        tctiopts = OPENSSL_strdup(tctienvvar);
+        if (!tctiopts) {
+            ERR(init_engine, ERR_R_MALLOC_FAILURE);
+            return 0;
+        }
+    }
+#endif
+
     rc = init_rand(e);
     if (rc != 1) {
         ERR(init_engine, TPM2TSS_R_SUBINIT_FAILED);
@@ -293,6 +305,10 @@ static int
 destroy_engine(ENGINE *e)
 {
     (void)(e);
+    if (tctiopts) {
+        OPENSSL_free(tctiopts);
+        tctiopts = NULL;
+    }
     ERR_unload_TPM2TSS_strings();
     return 1;
 }
