@@ -51,7 +51,8 @@ typedef struct {
     };
 } TPM2_DATA;
 
-#define TPM2TSS_SET_OWNERAUTH ENGINE_CMD_BASE
+#define TPM2TSS_SET_OWNERAUTH   ENGINE_CMD_BASE
+#define TPM2TSS_SET_TCTI        (ENGINE_CMD_BASE + 1)
 
 int
 tpm2tss_tpm2data_write(const TPM2_DATA *tpm2data, const char *filename);

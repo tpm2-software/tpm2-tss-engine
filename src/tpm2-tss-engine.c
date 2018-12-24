@@ -55,6 +55,7 @@ static const char *engine_name = "TPM2-TSS engine for OpenSSL";
 
 TPM2B_DIGEST ownerauth = { .size = 0 };
 
+static char *tctiopts = NULL;
 
 /** Retrieve password
  *
@@ -117,6 +118,10 @@ static const ENGINE_CMD_DEFN cmd_defns[] = {
 	 "SET_OWNERAUTH",
 	 "Set the password for the owner hierarchy (default none)",
 	 ENGINE_CMD_FLAG_STRING},
+	{TPM2TSS_SET_TCTI,
+	 "SET_TCTI",
+	 "Set the TCTI module and options (default none)",
+	 ENGINE_CMD_FLAG_STRING},
 	{0, NULL, NULL, 0}
 };
 
@@ -140,6 +145,28 @@ engine_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) ())
             ownerauth.size = strlen((char *)p);
             memcpy(&ownerauth.buffer[0], p, ownerauth.size);
 			return 1;
+        case TPM2TSS_SET_TCTI:
+            /* free the existing TCTI-option string if non-NULL */
+            if (tctiopts) {
+                OPENSSL_free(tctiopts);
+                tctiopts = NULL;
+            }
+            if (!p) {
+                DBG("Setting TCTI to the ESAPI default\n");
+                return 1;
+            } else {
+                if (p) {
+                    tctiopts = OPENSSL_strdup(p);
+                    if (tctiopts) {
+                        DBG("Setting TCTI option to \"%s\"\n", tctiopts);
+                        return 1;
+                    } else {
+                        ERR(engine_ctrl, ERR_R_MALLOC_FAILURE);
+                        return 0;
+                    }
+                } else
+                    return 1;
+            }
 		default:
 			break;
 	}
