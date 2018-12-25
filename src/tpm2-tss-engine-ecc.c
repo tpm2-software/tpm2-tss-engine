@@ -166,7 +166,7 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 		goto error;
 	}
 
-    r = init_tpm_key (  &(eactx.ectx),
+    r = init_tpm_key (  &eactx,
                         &keyHandle,
                         tpm2Data);
     ERRchktss(ecdsa_sign, r, goto error);

@@ -477,60 +477,77 @@ error:
  * Establish a connection with the TPM using ESYS libraries, create a primary
  * key under the owner hierarchy and then load the TPM key and set its auth
  * value.
- * @param ctx The resulting ESYS context.
+ * @param eactx_p The ESYS_AUXCONTEXT to be populated.
  * @param keyHandle The resulting handle for the key key.
  * @param tpm2Data The key data, owner auth and key auth to be used
  * @retval TSS2_RC_SUCCESS on success
  * @retval TSS2_RCs according to the error
  */
 TSS2_RC
-init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
+init_tpm_key (  ESYS_AUXCONTEXT *eactx_p,
+                ESYS_TR         *keyHandle,
+                TPM2_DATA       *tpm2Data)
 {
     TSS2_RC r;
     ESYS_TR parent = ESYS_TR_NONE;
     *keyHandle = ESYS_TR_NONE;
-    *ctx = NULL;
+    *eactx_p = (ESYS_AUXCONTEXT){0};
 
     if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
         DBG("Establishing connection with TPM.\n");
-        r = Esys_Initialize(ctx, NULL, NULL);
+        r = esys_auxctx_init (eactx_p);
         ERRchktss(init_tpm_key, r, goto error);
 
-        r = Esys_Startup(*ctx, TPM2_SU_CLEAR);
+        r = Esys_Startup (eactx_p->ectx, TPM2_SU_CLEAR);
         if (r == TPM2_RC_INITIALIZE)
             DBG("TPM was already started up thus false positive failing in tpm2tss"
                 " log.\n");
         else
             ERRchktss(init_tpm_key, r, goto error);
 
-        r = Esys_TR_FromTPMPublic(*ctx, tpm2Data->handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, keyHandle);
+        r = Esys_TR_FromTPMPublic ( eactx_p->ectx,
+                                    tpm2Data->handle,
+                                    ESYS_TR_NONE,
+                                    ESYS_TR_NONE,
+                                    ESYS_TR_NONE,
+                                    keyHandle);
         ERRchktss(init_tpm_key, r, goto error);
     } else if (tpm2Data->privatetype == KEY_TYPE_BLOB 
                && tpm2Data->parent != TPM2_RH_OWNER) {
-        r = init_tpm_parent(ctx, tpm2Data->parent, &parent);
+        r = init_tpm_parent (   &(eactx_p->ectx),
+                                tpm2Data->parent,
+                                &parent);
         ERRchktss(init_tpm_key, r, goto error);
 printf("parent is 0x%08x.\n", tpm2Data->parent);
 
         DBG("Loading key blob.\n");
-        r = Esys_Load(*ctx, parent,
-                      ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                      &tpm2Data->priv, &tpm2Data->pub,
-                      keyHandle);
-        Esys_TR_Close(*ctx, &parent);
+        r = Esys_Load ( eactx_p->ectx,
+                        parent,
+                        ESYS_TR_PASSWORD,
+                        ESYS_TR_NONE,
+                        ESYS_TR_NONE,
+                        &tpm2Data->priv,
+                        &tpm2Data->pub,
+                        keyHandle);
+        Esys_TR_Close (eactx_p->ectx, &parent);
         ERRchktss(init_tpm_key, r, goto error);
     } else if (tpm2Data->privatetype == KEY_TYPE_BLOB) {
-        r = init_tpm_parent(ctx, 0, &parent);
+        r = init_tpm_parent (&(eactx_p->ectx), 0, &parent);
         ERRchktss(init_tpm_key, r, goto error);
 
 printf("parent is primary");
         DBG("Loading key blob.\n");
-        r = Esys_Load(*ctx, parent,
-                      ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                      &tpm2Data->priv, &tpm2Data->pub,
-                      keyHandle);
+        r = Esys_Load ( eactx_p->ectx,
+                        parent,
+                        ESYS_TR_PASSWORD,
+                        ESYS_TR_NONE,
+                        ESYS_TR_NONE,
+                        &tpm2Data->priv,
+                        &tpm2Data->pub,
+                        keyHandle);
         ERRchktss(init_tpm_key, r, goto error);
 
-        r = Esys_FlushContext(*ctx, parent);
+        r = Esys_FlushContext (eactx_p->ectx, parent);
         ERRchktss(rsa_priv_enc, r, goto error);
         parent = ESYS_TR_NONE;
     } else {
@@ -538,17 +555,19 @@ printf("parent is primary");
         ERRchktss(init_tpm_key, r, goto error);
     }
 
-    r = Esys_TR_SetAuth(*ctx, *keyHandle, &tpm2Data->userauth);
+    r = Esys_TR_SetAuth (   eactx_p->ectx,
+                            *keyHandle,
+                            &tpm2Data->userauth);
     ERRchktss(init_tpm_key, r, goto error);
 
     return TSS2_RC_SUCCESS;
 error:
     if (parent != ESYS_TR_NONE)
-        Esys_FlushContext(*ctx, parent);
+        Esys_FlushContext (eactx_p->ectx, parent);
     if (*keyHandle != ESYS_TR_NONE)
-        Esys_FlushContext(*ctx, *keyHandle);
+        Esys_FlushContext (eactx_p->ectx, *keyHandle);
     *keyHandle = ESYS_TR_NONE;
 
-    Esys_Finalize(ctx);
+    esys_auxctx_free (eactx_p);
     return r;
 }
