@@ -130,7 +130,7 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
     DBGBUF(dgst, dgst_len);
 
 	TSS2_RC r;
-    ESYS_CONTEXT *ectx = NULL;
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPMT_SIGNATURE *sig = NULL;
 
@@ -166,13 +166,20 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 		goto error;
 	}
 
-    r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
+    r = init_tpm_key (  &(eactx.ectx),
+                        &keyHandle,
+                        tpm2Data);
     ERRchktss(ecdsa_sign, r, goto error);
 
-    r = Esys_Sign(ectx, keyHandle,
-                  ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                  &digest, &inScheme, &validation,
-                  &sig);
+    r = Esys_Sign ( eactx.ectx,
+                    keyHandle,
+                    ESYS_TR_PASSWORD,
+                    ESYS_TR_NONE,
+                    ESYS_TR_NONE,
+                    &digest,
+                    &inScheme,
+                    &validation,
+                    &sig);
     ERRchktss(ecdsa_sign, r, goto error);
 
     ret = ECDSA_SIG_new();
@@ -205,7 +212,7 @@ error:
 out:
     free(sig);
     if (keyHandle != ESYS_TR_NONE)
-        Esys_FlushContext(ectx, keyHandle);
+        Esys_FlushContext (eactx.ectx, keyHandle);
     if (r != TSS2_RC_SUCCESS && ret != NULL) {
         if (bns) BN_free(bns);
         if (bnr) BN_free(bnr);
@@ -215,7 +222,7 @@ out:
         ret = NULL;
     }
 
-    Esys_Finalize(&ectx);
+    esys_auxctx_free (&eactx);
     return (r == TSS2_RC_SUCCESS)? ret : NULL;
 }
 
@@ -412,7 +419,7 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     DBG("GenKey for ecdsa.\n");
 
     TSS2_RC r;
-    ESYS_CONTEXT *ectx = NULL;
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
     ESYS_TR parent = ESYS_TR_NONE;
     TPM2B_PUBLIC *keyPublic = NULL;
     TPM2B_PRIVATE *keyPrivate = NULL;
@@ -453,17 +460,29 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     } else
         tpm2Data->emptyAuth = 1;
 
-    r = init_tpm_parent(&ectx, parentHandle, &parent);
+    r = init_tpm_parent (   &(eactx.ectx),
+                            parentHandle,
+                            &parent);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
 
     tpm2Data->parent = parentHandle;
 
     DBG("Generating the ECC key inside the TPM.\n");
 
-    r = Esys_Create(ectx, parent,
-                    ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                    &inSensitive, &inPublic, &allOutsideInfo, &allCreationPCR,
-                    &keyPrivate, &keyPublic, NULL, NULL, NULL);
+    r = Esys_Create (   eactx.ectx,
+                        parent,
+                        ESYS_TR_PASSWORD,
+                        ESYS_TR_NONE,
+                        ESYS_TR_NONE,
+                        &inSensitive,
+                        &inPublic,
+                        &allOutsideInfo,
+                        &allCreationPCR,
+                        &keyPrivate,
+                        &keyPublic,
+                        NULL,
+                        NULL,
+                        NULL);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
 
     DBG("Generated the ECC key inside the TPM.\n");
@@ -492,9 +511,9 @@ end:
     free(keyPublic);
 
     if (parent != ESYS_TR_NONE && !parentHandle)
-        Esys_FlushContext(ectx, parent);
+        Esys_FlushContext (eactx.ectx, parent);
 
-    Esys_Finalize(&ectx);
+    esys_auxctx_free (&eactx);
 
     return (r == TSS2_RC_SUCCESS);
 }
