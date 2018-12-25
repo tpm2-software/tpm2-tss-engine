@@ -47,6 +47,17 @@ int init_ecc(ENGINE *e);
 int init_rand(ENGINE *e);
 int init_rsa(ENGINE *e);
 
+typedef void* dl_handle_t;
+
+typedef struct {
+    dl_handle_t     dlhandle;
+    ESYS_CONTEXT    *ectx;
+} ESYS_AUXCONTEXT;
+
+TSS2_RC esys_auxctx_init (ESYS_AUXCONTEXT *eactx_p);
+
+TSS2_RC esys_auxctx_free (ESYS_AUXCONTEXT *eactx_p);
+
 TSS2_RC init_tpm_parent(ESYS_CONTEXT **ctx, uint32_t parentHandle,
                         ESYS_TR *parent);
 TSS2_RC init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle,
