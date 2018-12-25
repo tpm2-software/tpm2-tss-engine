@@ -122,7 +122,7 @@ rsa_priv_enc(int flen,
 
     int ret = 0;
     TSS2_RC r = TSS2_RC_SUCCESS;
-    ESYS_CONTEXT *ectx = NULL;
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPM2B_DATA label = { .size = 0 };
     TPM2B_PUBLIC_KEY_RSA *sig = NULL;
@@ -157,14 +157,21 @@ rsa_priv_enc(int flen,
     DBG("Padded digest data (size=%i):\n", digest.size);
     DBGBUF(&digest.buffer[0], digest.size);
 
-    r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
+    r = init_tpm_key (  &(eactx.ectx),
+                        &keyHandle,
+                        tpm2Data);
     ERRchktss(rsa_priv_enc, r, goto error);
 
     DBG("Signing (via decrypt operation).\n");
-    r = Esys_RSA_Decrypt(ectx, keyHandle,
-                         ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                         &digest, &inScheme, &label,
-                         &sig);
+    r = Esys_RSA_Decrypt (  eactx.ectx,
+                            keyHandle,
+                            ESYS_TR_PASSWORD,
+                            ESYS_TR_NONE,
+                            ESYS_TR_NONE,
+                            &digest,
+                            &inScheme,
+                            &label,
+                            &sig);
     ERRchktss(rsa_priv_enc, r, goto error);
 
     DBG("Signature done (size=%i):\n", sig->size);
@@ -182,12 +189,12 @@ out:
     free(sig);
     if (keyHandle != ESYS_TR_NONE) {
       if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
-        Esys_TR_Close(ectx, &keyHandle);
+        Esys_TR_Close (eactx.ectx, &keyHandle);
       } else {
-        Esys_FlushContext(ectx, keyHandle);
+        Esys_FlushContext (eactx.ectx, keyHandle);
       }
     }
-    Esys_Finalize(&ectx);
+    esys_auxctx_free (&eactx);
     return (r == TSS2_RC_SUCCESS)? ret : 0;
 }
 
@@ -224,7 +231,7 @@ rsa_priv_dec(int flen,
     DBGBUF(from, flen);
 
     TSS2_RC r;
-    ESYS_CONTEXT *ectx = NULL;
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPM2B_DATA label = { .size = 0 };
     TPM2B_PUBLIC_KEY_RSA *message = NULL;
@@ -250,13 +257,20 @@ rsa_priv_dec(int flen,
         goto error;
     }
 
-    r = init_tpm_key(&ectx, &keyHandle, tpm2Data);
+    r = init_tpm_key (  &(eactx.ectx),
+                        &keyHandle,
+                        tpm2Data);
     ERRchktss(rsa_priv_dec, r, goto out);
 
-    r = Esys_RSA_Decrypt(ectx, keyHandle,
-                         ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                         &cipher, &inScheme, &label,
-                         &message);
+    r = Esys_RSA_Decrypt (  eactx.ectx,
+                            keyHandle,
+                            ESYS_TR_PASSWORD,
+                            ESYS_TR_NONE,
+                            ESYS_TR_NONE,
+                            &cipher,
+                            &inScheme,
+                            &label,
+                            &message);
     ERRchktss(rsa_priv_dec, r, goto out);
 
     DBG("Decrypted message (size=%i):\n", message->size);
@@ -274,13 +288,13 @@ out:
     free(message);
     if (keyHandle != ESYS_TR_NONE) {
       if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
-        Esys_TR_Close(ectx, &keyHandle);
+        Esys_TR_Close (eactx.ectx, &keyHandle);
       } else {
-        Esys_FlushContext(ectx, keyHandle);
+        Esys_FlushContext (eactx.ectx, keyHandle);
       }
     }
 
-    Esys_Finalize(&ectx);
+    esys_auxctx_free (&eactx);
     return (r == TSS2_RC_SUCCESS)? flen : 0;
 }
 
@@ -490,7 +504,7 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
     DBG("Generating RSA key for %i bits keysize.\n", bits);
 
     TSS2_RC r = TSS2_RC_SUCCESS;
-    ESYS_CONTEXT *ectx = NULL;
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
     ESYS_TR parent = ESYS_TR_NONE;
     TPM2B_PUBLIC *keyPublic = NULL;
     TPM2B_PRIVATE *keyPrivate = NULL;
@@ -533,17 +547,29 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
     } else
         tpm2Data->emptyAuth = 1;
 
-    r = init_tpm_parent(&ectx, parentHandle, &parent);
+    r = init_tpm_parent (   &(eactx.ectx),
+                            parentHandle,
+                            &parent);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
 
     tpm2Data->parent = parentHandle;
 
     DBG("Generating the RSA key inside the TPM.\n");
 
-    r = Esys_Create(ectx, parent,
-                    ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                    &inSensitive, &inPublic, &allOutsideInfo, &allCreationPCR,
-                    &keyPrivate, &keyPublic, NULL, NULL, NULL);
+    r = Esys_Create (   eactx.ectx,
+                        parent,
+                        ESYS_TR_PASSWORD,
+                        ESYS_TR_NONE,
+                        ESYS_TR_NONE,
+                        &inSensitive,
+                        &inPublic,
+                        &allOutsideInfo,
+                        &allCreationPCR,
+                        &keyPrivate,
+                        &keyPublic,
+                        NULL,
+                        NULL,
+                        NULL);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
 
     DBG("Generated the RSA key inside the TPM.\n");
@@ -571,9 +597,9 @@ end:
     free(keyPublic);
 
     if (parent != ESYS_TR_NONE && !parentHandle)
-        Esys_FlushContext(ectx, parent);
+        Esys_FlushContext (eactx.ectx, parent);
 
-    Esys_Finalize(&ectx);
+    esys_auxctx_free (&eactx);
 
     return (r == TSS2_RC_SUCCESS);
 }
