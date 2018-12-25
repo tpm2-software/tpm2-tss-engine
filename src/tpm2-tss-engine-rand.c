@@ -50,13 +50,13 @@
 static int
 rand_bytes(unsigned char *buf, int num)
 {
-    ESYS_CONTEXT *ectx = NULL;
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
     TSS2_RC r;
 
-    r = Esys_Initialize(&ectx, NULL, NULL);
+    r = esys_auxctx_init (&eactx);
     ERRchktss(rand_bytes, r, goto end);
 
-    r = Esys_Startup(ectx, TPM2_SU_CLEAR);
+    r = Esys_Startup (eactx.ectx, TPM2_SU_CLEAR);
     if (r == TPM2_RC_INITIALIZE)
         DBG("TPM already started up. False positive error in tpm2tss log.\n");
     else
@@ -64,8 +64,12 @@ rand_bytes(unsigned char *buf, int num)
 
     TPM2B_DIGEST *b;
     while (num > 0) {
-        r = Esys_GetRandom(ectx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
-                           num, &b);
+        r = Esys_GetRandom (eactx.ectx,
+                            ESYS_TR_NONE,
+                            ESYS_TR_NONE,
+                            ESYS_TR_NONE,
+                            num,
+                            &b);
         ERRchktss(rand_bytes, r, goto end);
 
         memcpy(buf, &b->buffer, b->size);
@@ -74,7 +78,7 @@ rand_bytes(unsigned char *buf, int num)
         free(b);
     }
 
-    Esys_Finalize(&ectx);
+    esys_auxctx_free (&eactx);
 
 end:
     return (r == TSS2_RC_SUCCESS);
