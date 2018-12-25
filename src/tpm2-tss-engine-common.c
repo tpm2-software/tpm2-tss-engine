@@ -52,6 +52,51 @@ IMPLEMENT_ASN1_FUNCTIONS(TSSPRIVKEY);
 IMPLEMENT_PEM_write_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY);
 IMPLEMENT_PEM_read_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY);
 
+/** Initialize the Auxiliary Esys context
+ *
+ */
+TSS2_RC esys_auxctx_init (ESYS_AUXCONTEXT *eactx_p)
+{
+
+    TSS2_RC r;
+    if (!eactx_p) {
+        ERR(esys_auxctx_init, TPM2TSS_R_GENERAL_FAILURE);
+        r = TSS2_BASE_RC_BAD_REFERENCE;
+    } else {
+        TSS2_TCTI_CONTEXT *tcti_ctx = NULL;
+        r = Esys_Initialize (   &(eactx_p->ectx),
+                                tcti_ctx,
+                                NULL);
+        if (TSS2_RC_SUCCESS != r) {
+            ERR(esys_auxctx_init, TPM2TSS_R_GENERAL_FAILURE);
+        }
+    }
+    return r;
+}
+
+/** Finalize the  Auxiliary Esys context
+ *
+ */
+TSS2_RC esys_auxctx_free (ESYS_AUXCONTEXT *eactx_p)
+{
+    TSS2_RC r;
+    TSS2_TCTI_CONTEXT *tcti_ctx;
+    if (!eactx_p || !(eactx_p->ectx)) {
+        ERR(esys_auxctx_free, TPM2TSS_R_GENERAL_FAILURE);
+        r = TSS2_BASE_RC_BAD_REFERENCE;
+    } else {
+        r = Esys_GetTcti (eactx_p->ectx, &tcti_ctx);
+        if (TSS2_RC_SUCCESS != r) {
+            ERR(esys_auxctx_free, TPM2TSS_R_GENERAL_FAILURE);
+        } else {
+            Esys_Finalize (&(eactx_p->ectx));
+            (void)tcti_ctx;
+            eactx_p->dlhandle = NULL;
+            eactx_p->ectx = NULL;
+        }
+    }
+    return r;
+}
 
 /** Serialize tpm2data onto disk
  *

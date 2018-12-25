@@ -79,6 +79,8 @@ void ERR_error(int function, int reason, const char *file, int line);
 #define TPM2TSS_F_tpm2tss_tpm2data_readtpm      112
 #define TPM2TSS_F_init_tpm_parent      113
 #define TPM2TSS_F_init_tpm_key          114
+#define TPM2TSS_F_esys_auxctx_init      115
+#define TPM2TSS_F_esys_auxctx_free      116
 /* tpm2-tss-engine-ecc.c */
 #define TPM2TSS_F_ecdsa_sign    120
 #define TPM2TSS_F_populate_ecc          121
