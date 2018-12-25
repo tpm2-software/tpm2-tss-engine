@@ -157,7 +157,7 @@ rsa_priv_enc(int flen,
     DBG("Padded digest data (size=%i):\n", digest.size);
     DBGBUF(&digest.buffer[0], digest.size);
 
-    r = init_tpm_key (  &(eactx.ectx),
+    r = init_tpm_key (  &eactx,
                         &keyHandle,
                         tpm2Data);
     ERRchktss(rsa_priv_enc, r, goto error);
@@ -257,7 +257,7 @@ rsa_priv_dec(int flen,
         goto error;
     }
 
-    r = init_tpm_key (  &(eactx.ectx),
+    r = init_tpm_key (  &eactx,
                         &keyHandle,
                         tpm2Data);
     ERRchktss(rsa_priv_dec, r, goto out);

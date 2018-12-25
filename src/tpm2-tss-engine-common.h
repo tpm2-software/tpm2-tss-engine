@@ -60,8 +60,10 @@ TSS2_RC esys_auxctx_free (ESYS_AUXCONTEXT *eactx_p);
 
 TSS2_RC init_tpm_parent(ESYS_CONTEXT **ctx, uint32_t parentHandle,
                         ESYS_TR *parent);
-TSS2_RC init_tpm_key(ESYS_CONTEXT **ctx, ESYS_TR *keyHandle,
-                     TPM2_DATA *tpm2Data);
+
+TSS2_RC init_tpm_key (  ESYS_AUXCONTEXT *eactx_p,
+                        ESYS_TR         *keyHandle,
+                        TPM2_DATA       *tpm2Data);
 
 #define ENGINE_HASH_ALG TPM2_ALG_SHA256
 
