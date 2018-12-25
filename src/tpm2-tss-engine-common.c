@@ -180,7 +180,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     TSS2_RC r;
     TPM2_DATA *tpm2Data = NULL;
     ESYS_TR keyHandle = ESYS_TR_NONE;
-    ESYS_CONTEXT *ectx = NULL;
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
     TPM2B_PUBLIC *outPublic;
     ESYS_TR session = ESYS_TR_NONE;
 
@@ -194,28 +194,38 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     tpm2Data->privatetype = KEY_TYPE_HANDLE;
     tpm2Data->handle = handle;
 
-    r = Esys_Initialize(&ectx, NULL, NULL);
+    r = esys_auxctx_init (&eactx);
     if (r) {
         ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
         goto error;
     }
 
-    r = Esys_Startup(ectx, TPM2_SU_CLEAR);
+    r = Esys_Startup (eactx.ectx, TPM2_SU_CLEAR);
     if (r == TPM2_RC_INITIALIZE)
         DBG("TPM was already started up thus false positive failing in tpm2tss"
             " log.\n");
     else
         ERRchktss(tpm2tss_tpm2data_readtpm, r, goto error);
 
-    r = Esys_TR_FromTPMPublic(ectx, tpm2Data->handle, ESYS_TR_NONE,
-                              ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
+    r = Esys_TR_FromTPMPublic ( eactx.ectx,
+                                tpm2Data->handle,
+                                ESYS_TR_NONE,
+                                ESYS_TR_NONE,
+                                ESYS_TR_NONE,
+                                &keyHandle);
     if (r) {
         ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
         goto error;
     }
 
-    r = Esys_ReadPublic(ectx, keyHandle, ESYS_TR_NONE, ESYS_TR_NONE,
-                        ESYS_TR_NONE, &outPublic, NULL, NULL);
+    r = Esys_ReadPublic (   eactx.ectx,
+                            keyHandle,
+                            ESYS_TR_NONE,
+                            ESYS_TR_NONE,
+                            ESYS_TR_NONE,
+                            &outPublic,
+                            NULL,
+                            NULL);
     if (r) {
         ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
         goto error;
@@ -232,10 +242,17 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
 
         /* We do the check by starting a bound audit session and executing a
            very cheap command. */
-        r = Esys_StartAuthSession(ectx, ESYS_TR_NONE, keyHandle,
-                                  ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
-                                  NULL, TPM2_SE_HMAC, &sym, TPM2_ALG_SHA256,
-                                  &session);
+        r = Esys_StartAuthSession ( eactx.ectx,
+                                    ESYS_TR_NONE,
+                                    keyHandle,
+                                    ESYS_TR_NONE,
+                                    ESYS_TR_NONE,
+                                    ESYS_TR_NONE,
+                                    NULL,
+                                    TPM2_SE_HMAC,
+                                    &sym,
+                                    TPM2_ALG_SHA256,
+                                    &session);
         /* Though this response code is sub-optimal, it's the only way to
            detect the bug in ESYS. */
         if (r == TSS2_ESYS_RC_GENERAL_FAILURE) {
@@ -246,13 +263,23 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
             ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
             goto error;
         }
-        Esys_TRSess_SetAttributes(ectx, session,
-                                  TPMA_SESSION_ENCRYPT, TPMA_SESSION_ENCRYPT);
-        Esys_TRSess_SetAttributes(ectx, session,
-                    TPMA_SESSION_CONTINUESESSION, TPMA_SESSION_CONTINUESESSION);
+        Esys_TRSess_SetAttributes ( eactx.ectx,
+                                    session,
+                                    TPMA_SESSION_ENCRYPT,
+                                    TPMA_SESSION_ENCRYPT);
+        Esys_TRSess_SetAttributes ( eactx.ectx,
+                                    session,
+                                    TPMA_SESSION_CONTINUESESSION,
+                                    TPMA_SESSION_CONTINUESESSION);
 
-        r = Esys_ReadPublic(ectx, keyHandle, session, ESYS_TR_NONE,
-                            ESYS_TR_NONE, &outPublic, NULL, NULL);
+        r = Esys_ReadPublic (   eactx.ectx,
+                                keyHandle,
+                                session,
+                                ESYS_TR_NONE,
+                                ESYS_TR_NONE,
+                                &outPublic,
+                                NULL,
+                                NULL);
 
         /* tpm2-tss < 2.2 has some bugs. (1) it may miscalculate the auth from
            above leading to a password query in case of empty auth and (2) it
@@ -269,25 +296,24 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         }
     }
 
-    if (session != ESYS_TR_NONE) Esys_FlushContext(ectx, session);
+    if (session != ESYS_TR_NONE) Esys_FlushContext (eactx.ectx, session);
 session_error:
-    Esys_TR_Close(ectx, &keyHandle);
+    Esys_TR_Close (eactx.ectx, &keyHandle);
 
-    Esys_Finalize(&ectx);
+    esys_auxctx_free (&eactx);
     tpm2Data->pub = *outPublic;
     free(outPublic);
 
     *tpm2Datap = tpm2Data;
     return 1;
 error:
-    if (session != ESYS_TR_NONE) Esys_FlushContext(ectx, session);
+    if (session != ESYS_TR_NONE) Esys_FlushContext (eactx.ectx, session);
     if (keyHandle != ESYS_TR_NONE)
-        Esys_TR_Close(ectx, &keyHandle);
-    Esys_Finalize(&ectx);
+        Esys_TR_Close (eactx.ectx, &keyHandle);
+    esys_auxctx_free (&eactx);
     if (tpm2Data) OPENSSL_free(tpm2Data);
     return 0;
 }
-
 
 /** Deserialize tpm2data from disk
  *
