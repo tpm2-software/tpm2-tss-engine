@@ -58,8 +58,9 @@ TSS2_RC esys_auxctx_init (ESYS_AUXCONTEXT *eactx_p);
 
 TSS2_RC esys_auxctx_free (ESYS_AUXCONTEXT *eactx_p);
 
-TSS2_RC init_tpm_parent(ESYS_CONTEXT **ctx, uint32_t parentHandle,
-                        ESYS_TR *parent);
+TSS2_RC init_tpm_parent (   ESYS_AUXCONTEXT *eactx_p,
+                            TPM2_HANDLE     parentHandle,
+                            ESYS_TR         *parent);
 
 TSS2_RC init_tpm_key (  ESYS_AUXCONTEXT *eactx_p,
                         ESYS_TR         *keyHandle,

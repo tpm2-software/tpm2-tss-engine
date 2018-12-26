@@ -547,7 +547,7 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
     } else
         tpm2Data->emptyAuth = 1;
 
-    r = init_tpm_parent (   &(eactx.ectx),
+    r = init_tpm_parent (   &eactx,
                             parentHandle,
                             &parent);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
