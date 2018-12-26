@@ -49,6 +49,16 @@ int init_rsa(ENGINE *e);
 
 typedef void* dl_handle_t;
 
+TSS2_RC tcti_set_opts (const char *opts);
+
+void tcti_clear_opts (void);
+
+TSS2_RC tcti_get_ctx (  TSS2_TCTI_CONTEXT   **ctx_p,
+                        dl_handle_t         *dlhandle_p);
+
+TSS2_RC tcti_free_ctx ( TSS2_TCTI_CONTEXT   **ctx_p,
+                        dl_handle_t         *dlhandle_p);
+
 typedef struct {
     dl_handle_t     dlhandle;
     ESYS_CONTEXT    *ectx;
