@@ -61,6 +61,7 @@ include_HEADERS = include/tpm2-tss-engine.h
 libtpm2tss_la_SOURCES = src/tpm2-tss-engine.c \
                         src/tpm2-tss-engine-common.c \
                         src/tpm2-tss-engine-common.h \
+                        src/tpm2-tss-engine-tcti.c \
                         src/tpm2-tss-engine-err.c \
                         src/tpm2-tss-engine-err.h \
                         src/tpm2-tss-engine-ecc.c \
