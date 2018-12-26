@@ -460,7 +460,7 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     } else
         tpm2Data->emptyAuth = 1;
 
-    r = init_tpm_parent (   &(eactx.ectx),
+    r = init_tpm_parent (   &eactx,
                             parentHandle,
                             &parent);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
