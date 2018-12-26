@@ -420,17 +420,19 @@ static TPML_PCR_SELECTION allCreationPCR = {
  * @retval TSS2_RCs according to the error
  */
 TSS2_RC
-init_tpm_parent(ESYS_CONTEXT **ctx, TPM2_HANDLE parentHandle, ESYS_TR *parent)
+init_tpm_parent (   ESYS_AUXCONTEXT *eactx_p,
+                    TPM2_HANDLE     parentHandle,
+                    ESYS_TR         *parent)
 {
     TSS2_RC r;
     *parent = ESYS_TR_NONE;
-    *ctx = NULL;
+    *eactx_p = (ESYS_AUXCONTEXT){0};
 
     DBG("Establishing connection with TPM.\n");
-    r = Esys_Initialize(ctx, NULL, NULL);
+    r = esys_auxctx_init (eactx_p);
     ERRchktss(init_tpm_parent, r, goto error);
 
-    r = Esys_Startup(*ctx, TPM2_SU_CLEAR);
+    r = Esys_Startup (eactx_p->ectx, TPM2_SU_CLEAR);
     if (r == TPM2_RC_INITIALIZE)
         DBG("TPM was already started up thus false positive failing in tpm2tss"
             " log.\n");
@@ -439,23 +441,37 @@ init_tpm_parent(ESYS_CONTEXT **ctx, TPM2_HANDLE parentHandle, ESYS_TR *parent)
 
     if (parentHandle && parentHandle != TPM2_RH_OWNER) {
         DBG("Connecting to a persistent parent key.\n");
-        r = Esys_TR_FromTPMPublic(*ctx, parentHandle,
-                                  ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
-                                  parent);
+        r = Esys_TR_FromTPMPublic ( eactx_p->ectx,
+                                    parentHandle,
+                                    ESYS_TR_NONE,
+                                    ESYS_TR_NONE,
+                                    ESYS_TR_NONE,
+                                    parent);
         ERRchktss(init_tpm_parent, r, goto error);
 
         return TSS2_RC_SUCCESS;
     }
 
     DBG("Creating primary key under owner.\n");
-    r = Esys_TR_SetAuth(*ctx, ESYS_TR_RH_OWNER, &ownerauth);
+    r = Esys_TR_SetAuth (   eactx_p->ectx,
+                            ESYS_TR_RH_OWNER,
+                            &ownerauth);
     ERRchktss(init_tpm_parent, r, goto error);
 
-    r = Esys_CreatePrimary(*ctx, ESYS_TR_RH_OWNER,
-                           ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                           &primarySensitive, &primaryTemplate,
-                           &allOutsideInfo, &allCreationPCR,
-                           parent, NULL, NULL, NULL, NULL);
+    r = Esys_CreatePrimary (eactx_p->ectx,
+                            ESYS_TR_RH_OWNER,
+                            ESYS_TR_PASSWORD,
+                            ESYS_TR_NONE,
+                            ESYS_TR_NONE,
+                            &primarySensitive,
+                            &primaryTemplate,
+                            &allOutsideInfo,
+                            &allCreationPCR,
+                            parent,
+                            NULL,
+                            NULL,
+                            NULL,
+                            NULL);
     if (r == 0x000009a2) {
         ERR(init_tpm_parent, TPM2TSS_R_OWNER_AUTH_FAILED);
         goto error;
@@ -465,10 +481,10 @@ init_tpm_parent(ESYS_CONTEXT **ctx, TPM2_HANDLE parentHandle, ESYS_TR *parent)
     return TSS2_RC_SUCCESS;
 error:
     if (*parent != ESYS_TR_NONE)
-        Esys_FlushContext(*ctx, *parent);
+        Esys_FlushContext (eactx_p->ectx, *parent);
     *parent = ESYS_TR_NONE;
 
-    Esys_Finalize(ctx);
+    esys_auxctx_free (eactx_p);
     return r;
 }
 
@@ -514,7 +530,7 @@ init_tpm_key (  ESYS_AUXCONTEXT *eactx_p,
         ERRchktss(init_tpm_key, r, goto error);
     } else if (tpm2Data->privatetype == KEY_TYPE_BLOB 
                && tpm2Data->parent != TPM2_RH_OWNER) {
-        r = init_tpm_parent (   &(eactx_p->ectx),
+        r = init_tpm_parent (   eactx_p,
                                 tpm2Data->parent,
                                 &parent);
         ERRchktss(init_tpm_key, r, goto error);
@@ -532,7 +548,7 @@ printf("parent is 0x%08x.\n", tpm2Data->parent);
         Esys_TR_Close (eactx_p->ectx, &parent);
         ERRchktss(init_tpm_key, r, goto error);
     } else if (tpm2Data->privatetype == KEY_TYPE_BLOB) {
-        r = init_tpm_parent (&(eactx_p->ectx), 0, &parent);
+        r = init_tpm_parent (eactx_p, 0, &parent);
         ERRchktss(init_tpm_key, r, goto error);
 
 printf("parent is primary");
