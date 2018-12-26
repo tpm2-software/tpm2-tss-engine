@@ -68,6 +68,14 @@ static ERR_STRING_DATA TPM2TSS_f[] = {
     ERR_F(rsa_priv_dec),
     ERR_F(tpm2tss_rsa_genkey),
     ERR_F(populate_rsa),
+    /* tpm2-tss-engine-tcti.c */
+    ERR_F(tcti_expand_dlname),
+    ERR_F(tcti_dlopen),
+    ERR_F(tcti_get_init),
+    ERR_F(__tcti_get_ctx),
+    ERR_F(tcti_set_opts),
+    ERR_F(tcti_get_ctx),
+    ERR_F(tcti_free_ctx),
     {0, NULL}
 };
 
@@ -87,6 +95,8 @@ static ERR_STRING_DATA TPM2TSS_r[] = {
     ERR_R(TPM2TSS_R_UNKNOWN_CURVE, Unknown ECC curve),
     ERR_R(TPM2TSS_R_UI_ERROR, User interaction),
     ERR_R(TPM2TSS_R_UNKNOWN_CTRL, Unknown engine ctrl),
+    ERR_R(TPM2TSS_R_DL_OPEN_FAILED, Failed to open TCTI library),
+    ERR_R(TPM2TSS_R_DL_INVALID, The TCTI library is invalid),
     /* TPM/TSS Reasons that are useful to the user */
     ERR_R(TPM2TSS_R_AUTH_FAILURE, Authorization failed),
     ERR_R(TPM2TSS_R_OWNER_AUTH_FAILED, Owner authorization failed),

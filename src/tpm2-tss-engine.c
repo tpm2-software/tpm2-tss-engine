@@ -55,8 +55,6 @@ static const char *engine_name = "TPM2-TSS engine for OpenSSL";
 
 TPM2B_DIGEST ownerauth = { .size = 0 };
 
-static char *tctiopts = NULL;
-
 /** Retrieve password
  *
  * Helper function to retreive a password from the user.
@@ -146,26 +144,19 @@ engine_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) ())
             memcpy(&ownerauth.buffer[0], p, ownerauth.size);
 			return 1;
         case TPM2TSS_SET_TCTI:
-            /* free the existing TCTI-option string if non-NULL */
-            if (tctiopts) {
-                OPENSSL_free(tctiopts);
-                tctiopts = NULL;
-            }
+            tcti_clear_opts ();
             if (!p) {
                 DBG("Setting TCTI to the ESAPI default\n");
                 return 1;
             } else {
-                if (p) {
-                    tctiopts = OPENSSL_strdup(p);
-                    if (tctiopts) {
-                        DBG("Setting TCTI option to \"%s\"\n", tctiopts);
-                        return 1;
-                    } else {
-                        ERR(engine_ctrl, ERR_R_MALLOC_FAILURE);
-                        return 0;
-                    }
-                } else
+                TSS2_RC r = tcti_set_opts (p);
+                if (TPM2_RC_SUCCESS != r) {
+                    ERR(init_engine, TPM2TSS_R_GENERAL_FAILURE);
+                    return 0;
+                } else {
+                    DBG("Setting TCTI option to \"%s\"\n", (char*)p);
                     return 1;
+                }
             }
 		default:
 			break;
@@ -265,9 +256,9 @@ init_engine(ENGINE *e) {
     /*  Set the default TCTI option from the environment */
     char *tctienvvar = getenv("TPM2TSSENGINE_TCTI");
     if (tctienvvar) {
-        tctiopts = OPENSSL_strdup(tctienvvar);
-        if (!tctiopts) {
-            ERR(init_engine, ERR_R_MALLOC_FAILURE);
+        TSS2_RC r = tcti_set_opts (tctienvvar);
+        if (TPM2_RC_SUCCESS != r) {
+            ERR(init_engine, TPM2TSS_R_GENERAL_FAILURE);
             return 0;
         }
     }
@@ -305,10 +296,7 @@ static int
 destroy_engine(ENGINE *e)
 {
     (void)(e);
-    if (tctiopts) {
-        OPENSSL_free(tctiopts);
-        tctiopts = NULL;
-    }
+    tcti_clear_opts ();
     ERR_unload_TPM2TSS_strings();
     return 1;
 }

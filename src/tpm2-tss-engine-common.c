@@ -63,12 +63,24 @@ TSS2_RC esys_auxctx_init (ESYS_AUXCONTEXT *eactx_p)
         ERR(esys_auxctx_init, TPM2TSS_R_GENERAL_FAILURE);
         r = TSS2_BASE_RC_BAD_REFERENCE;
     } else {
-        TSS2_TCTI_CONTEXT *tcti_ctx = NULL;
-        r = Esys_Initialize (   &(eactx_p->ectx),
-                                tcti_ctx,
-                                NULL);
+        TSS2_TCTI_CONTEXT *tcti_ctx;
+        dl_handle_t dlhandle;
+
+        r = tcti_get_ctx (&tcti_ctx, &dlhandle);
         if (TSS2_RC_SUCCESS != r) {
             ERR(esys_auxctx_init, TPM2TSS_R_GENERAL_FAILURE);
+        } else {
+            ESYS_CONTEXT *ectx;
+            r = Esys_Initialize (   &ectx,
+                                    tcti_ctx,
+                                    NULL);
+            if (TSS2_RC_SUCCESS != r) {
+                ERR(esys_auxctx_init, TPM2TSS_R_GENERAL_FAILURE);
+                tcti_free_ctx (&tcti_ctx, &dlhandle);
+            } else {
+                eactx_p->ectx = ectx;
+                eactx_p->dlhandle = dlhandle;
+            }
         }
     }
     return r;
@@ -80,17 +92,17 @@ TSS2_RC esys_auxctx_init (ESYS_AUXCONTEXT *eactx_p)
 TSS2_RC esys_auxctx_free (ESYS_AUXCONTEXT *eactx_p)
 {
     TSS2_RC r;
-    TSS2_TCTI_CONTEXT *tcti_ctx;
     if (!eactx_p || !(eactx_p->ectx)) {
         ERR(esys_auxctx_free, TPM2TSS_R_GENERAL_FAILURE);
         r = TSS2_BASE_RC_BAD_REFERENCE;
     } else {
+        TSS2_TCTI_CONTEXT *tcti_ctx;
         r = Esys_GetTcti (eactx_p->ectx, &tcti_ctx);
         if (TSS2_RC_SUCCESS != r) {
             ERR(esys_auxctx_free, TPM2TSS_R_GENERAL_FAILURE);
         } else {
             Esys_Finalize (&(eactx_p->ectx));
-            (void)tcti_ctx;
+            tcti_free_ctx (&tcti_ctx, &(eactx_p->dlhandle));
             eactx_p->dlhandle = NULL;
             eactx_p->ectx = NULL;
         }
