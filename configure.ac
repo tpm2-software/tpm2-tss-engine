@@ -123,11 +123,23 @@ AS_IF([test -z "$with_enginesdir"],
     [with_enginesdir=$libdir/engines])
 AC_SUBST(ENGINESDIR, "$with_enginesdir")
 
+AC_ARG_WITH([completionsdir],
+            [AS_HELP_STRING([--with-completionsdir],
+                            [Set the bash completions directory (default: use pkg-config)])],
+            [],
+            [with_completionsdir=`$PKG_CONFIG --variable=completionsdir bash-completion`])
+AS_IF([test -z "$with_completionsdir"],
+    [AC_MSG_WARN([Empty completionsdir, using $datarootdir/bash-completion/completions instead.])])
+AS_IF([test -z "$with_completionsdir"],
+    [with_completionsdir=$datarootdir/bash-completion/completions])
+AC_SUBST(completionsdir, "$with_completionsdir")
+
 AC_OUTPUT
 
 AC_MSG_RESULT([
 $PACKAGE_NAME $VERSION
-    man-pages:  $PANDOC
-    enginesdir: $with_enginesdir
+    man-pages:      $PANDOC
+    enginesdir:     $with_enginesdir
+    completionsdir: $with_completionsdir
 ])
     
