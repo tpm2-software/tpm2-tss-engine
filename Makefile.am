@@ -37,7 +37,7 @@ AM_CFLAGS       = $(INCLUDE_DIRS) $(EXTRA_CFLAGS) $(TSS2_ESYS_CFLAGS) \
 AM_LDFLAGS      = $(EXTRA_LDFLAGS) $(CODE_COVERAGE_LIBS)
 AM_LDADD        = $(TSS2_ESYS_LIBS) $(CRYPTO_LIBS) -ldl
 
-AM_DISTCHECK_CONFIGURE_FLAGS=--with-enginesdir=
+AM_DISTCHECK_CONFIGURE_FLAGS=--with-enginesdir= --with-completionsdir=
 
 # Initialize empty variables to be extended throughout
 lib_LTLIBRARIES =
@@ -81,7 +81,7 @@ install-exec-local:
 # see https://github.com/openssl/openssl/commit/9ee0ed3de66678a15db126d10b3e4226e835b8f5 
 install-exec-hook:
 	(cd $(DESTDIR)$(openssl_enginedir) && \
-         $(LN_S) libtpm2tss.so tpm2tss.so)
+         $(LN_S) -f libtpm2tss.so tpm2tss.so)
 
 uninstall-hook:
 	(cd $(DESTDIR)$(openssl_enginedir) && \
@@ -180,6 +180,6 @@ CLEANFILES += \
     $(man3_MANS)
 
 ### Bash Completion
-bash_completiondir = $(sysconfdir)/bash_completion.d
-bash_completion_DATA = tpm2tss_completion
-EXTRA_DIST += tpm2tss_completion
+bash_completiondir = $(completionsdir)
+bash_completion_DATA = bash-completion/tpm2tss-genkey
+EXTRA_DIST += bash-completion/tpm2tss-genkey
