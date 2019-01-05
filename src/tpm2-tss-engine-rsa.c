@@ -377,6 +377,23 @@ populate_rsa(RSA *rsa) {
     BIGNUM *iqmp = BN_new();
 
     if (!n || !e || !d || !p || !q || !dmp1 || !dmq1 || !iqmp) {
+        if (n)
+            BN_free(n);
+        if (e)
+            BN_free(e);
+        if (d)
+            BN_free(d);
+        if (p)
+            BN_free(p);
+        if (q)
+            BN_free(q);
+        if (dmp1)
+            BN_free(dmp1);
+        if (dmq1)
+            BN_free(dmq1);
+        if (iqmp)
+            BN_free(iqmp);
+
         ERR(populate_rsa, ERR_R_MALLOC_FAILURE);
         goto error;
     }
