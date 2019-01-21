@@ -513,7 +513,6 @@ init_tpm_key (ESYS_AUXCONTEXT *eactx_p, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
                && tpm2Data->parent != TPM2_RH_OWNER) {
         r = init_tpm_parent(eactx_p, tpm2Data->parent, &parent);
         ERRchktss(init_tpm_key, r, goto error);
-printf("parent is 0x%08x.\n", tpm2Data->parent);
 
         DBG("Loading key blob.\n");
         r = Esys_Load(eactx_p->ectx, parent,
@@ -525,7 +524,6 @@ printf("parent is 0x%08x.\n", tpm2Data->parent);
         r = init_tpm_parent(eactx_p, 0, &parent);
         ERRchktss(init_tpm_key, r, goto error);
 
-printf("parent is primary");
         DBG("Loading key blob.\n");
         r = Esys_Load(eactx_p->ectx, parent,
                       ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
