@@ -50,13 +50,13 @@
 static int
 rand_bytes(unsigned char *buf, int num)
 {
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
     TSS2_RC r;
 
-    r = esys_auxctx_init (&eactx);
+    r = esys_auxctx_init(&eactx);
     ERRchktss(rand_bytes, r, goto end);
 
-    r = Esys_Startup (eactx.ectx, TPM2_SU_CLEAR);
+    r = Esys_Startup(eactx.ectx, TPM2_SU_CLEAR);
     if (r == TPM2_RC_INITIALIZE)
         DBG("TPM already started up. False positive error in tpm2tss log.\n");
     else
@@ -64,12 +64,9 @@ rand_bytes(unsigned char *buf, int num)
 
     TPM2B_DIGEST *b;
     while (num > 0) {
-        r = Esys_GetRandom (eactx.ectx,
-                            ESYS_TR_NONE,
-                            ESYS_TR_NONE,
-                            ESYS_TR_NONE,
-                            num,
-                            &b);
+        r = Esys_GetRandom(eactx.ectx,
+                           ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
+                           num, &b);
         ERRchktss(rand_bytes, r, goto end);
 
         memcpy(buf, &b->buffer, b->size);
@@ -78,9 +75,9 @@ rand_bytes(unsigned char *buf, int num)
         free(b);
     }
 
-    esys_auxctx_free (&eactx);
+    esys_auxctx_free(&eactx);
 
-end:
+ end:
     return (r == TSS2_RC_SUCCESS);
 }
 
@@ -90,18 +87,19 @@ end:
  * function, our status is allways good.
  * @retval 1 allways good status
  */
-static int rand_status()
+static int
+rand_status()
 {
     return 1;
 }
 
 static RAND_METHOD rand_methods = {
-    NULL, /* seed() */
+    NULL,                       /* seed() */
     rand_bytes,
-    NULL, /* cleanup() */
-    NULL, /* add() */
-    rand_bytes, /* pseudorand() */
-    rand_status  /* status() */
+    NULL,                       /* cleanup() */
+    NULL,                       /* add() */
+    rand_bytes,                 /* pseudorand() */
+    rand_status                 /* status() */
 };
 
 /** Initialize the tpm2tss engine's rand submodule
@@ -112,6 +110,7 @@ static RAND_METHOD rand_methods = {
  * @retval 0 on failure
  */
 int
-init_rand(ENGINE *e) {
+init_rand(ENGINE *e)
+{
     return ENGINE_set_RAND(e, &rand_methods);
 }

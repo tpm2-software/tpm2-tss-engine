@@ -51,6 +51,7 @@ RSA_METHOD *rsa_methods = NULL;
 static TPM2B_DATA allOutsideInfo = {
     .size = 0,
 };
+
 static TPML_PCR_SELECTION allCreationPCR = {
     .count = 0,
 };
@@ -98,11 +99,8 @@ static TPM2B_PUBLIC keyTemplate = {
  * @retval size Size of the returned signature
  */
 static int
-rsa_priv_enc(int flen,
-                  const unsigned char *from,
-                  unsigned char *to,
-                  RSA *rsa,
-                  int padding)
+rsa_priv_enc(int flen, const unsigned char *from, unsigned char *to, RSA *rsa,
+             int padding)
 {
     TPM2_DATA *tpm2Data = RSA_get_app_data(rsa);
 
@@ -122,7 +120,7 @@ rsa_priv_enc(int flen,
 
     int ret = 0;
     TSS2_RC r = TSS2_RC_SUCCESS;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPM2B_DATA label = { .size = 0 };
     TPM2B_PUBLIC_KEY_RSA *sig = NULL;
@@ -137,7 +135,8 @@ rsa_priv_enc(int flen,
 
     switch (padding) {
     case RSA_PKCS1_PADDING:
-        ret = RSA_padding_add_PKCS1_type_1(&digest.buffer[0], digest.size, from, flen);
+        ret = RSA_padding_add_PKCS1_type_1(&digest.buffer[0], digest.size,
+                                           from, flen);
         break;
     case RSA_X931_PADDING:
         ret = RSA_padding_add_X931(&digest.buffer[0], digest.size, from, flen);
@@ -157,21 +156,13 @@ rsa_priv_enc(int flen,
     DBG("Padded digest data (size=%i):\n", digest.size);
     DBGBUF(&digest.buffer[0], digest.size);
 
-    r = init_tpm_key (  &eactx,
-                        &keyHandle,
-                        tpm2Data);
+    r = init_tpm_key(&eactx, &keyHandle, tpm2Data);
     ERRchktss(rsa_priv_enc, r, goto error);
 
     DBG("Signing (via decrypt operation).\n");
-    r = Esys_RSA_Decrypt (  eactx.ectx,
-                            keyHandle,
-                            ESYS_TR_PASSWORD,
-                            ESYS_TR_NONE,
-                            ESYS_TR_NONE,
-                            &digest,
-                            &inScheme,
-                            &label,
-                            &sig);
+    r = Esys_RSA_Decrypt(eactx.ectx, keyHandle,
+                         ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                         &digest, &inScheme, &label, &sig);
     ERRchktss(rsa_priv_enc, r, goto error);
 
     DBG("Signature done (size=%i):\n", sig->size);
@@ -182,20 +173,20 @@ rsa_priv_enc(int flen,
 
     goto out;
 
-error:
+ error:
     r = -1;
 
-out:
+ out:
     free(sig);
     if (keyHandle != ESYS_TR_NONE) {
-      if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
-        Esys_TR_Close (eactx.ectx, &keyHandle);
-      } else {
-        Esys_FlushContext (eactx.ectx, keyHandle);
-      }
+        if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
+            Esys_TR_Close(eactx.ectx, &keyHandle);
+        } else {
+            Esys_FlushContext(eactx.ectx, keyHandle);
+        }
     }
-    esys_auxctx_free (&eactx);
-    return (r == TSS2_RC_SUCCESS)? ret : 0;
+    esys_auxctx_free(&eactx);
+    return (r == TSS2_RC_SUCCESS) ? ret : 0;
 }
 
 /** Decrypt data using a TPM key
@@ -210,11 +201,8 @@ out:
  * @retval size Size of the returned plaintext
  */
 static int
-rsa_priv_dec(int flen,
-                  const unsigned char *from,
-                  unsigned char *to,
-                  RSA *rsa,
-                  int padding)
+rsa_priv_dec(int flen, const unsigned char *from, unsigned char *to, RSA * rsa,
+             int padding)
 {
     TPM2_DATA *tpm2Data = RSA_get_app_data(rsa);
 
@@ -231,7 +219,7 @@ rsa_priv_dec(int flen,
     DBGBUF(from, flen);
 
     TSS2_RC r;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPM2B_DATA label = { .size = 0 };
     TPM2B_PUBLIC_KEY_RSA *message = NULL;
@@ -257,20 +245,12 @@ rsa_priv_dec(int flen,
         goto error;
     }
 
-    r = init_tpm_key (  &eactx,
-                        &keyHandle,
-                        tpm2Data);
+    r = init_tpm_key(&eactx, &keyHandle, tpm2Data);
     ERRchktss(rsa_priv_dec, r, goto out);
 
-    r = Esys_RSA_Decrypt (  eactx.ectx,
-                            keyHandle,
-                            ESYS_TR_PASSWORD,
-                            ESYS_TR_NONE,
-                            ESYS_TR_NONE,
-                            &cipher,
-                            &inScheme,
-                            &label,
-                            &message);
+    r = Esys_RSA_Decrypt(eactx.ectx, keyHandle,
+                         ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                         &cipher, &inScheme, &label, &message);
     ERRchktss(rsa_priv_dec, r, goto out);
 
     DBG("Decrypted message (size=%i):\n", message->size);
@@ -281,21 +261,21 @@ rsa_priv_dec(int flen,
 
     goto out;
 
-error:
+ error:
     r = -1;
 
-out:
+ out:
     free(message);
     if (keyHandle != ESYS_TR_NONE) {
-      if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
-        Esys_TR_Close (eactx.ectx, &keyHandle);
-      } else {
-        Esys_FlushContext (eactx.ectx, keyHandle);
-      }
+        if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
+            Esys_TR_Close(eactx.ectx, &keyHandle);
+        } else {
+            Esys_FlushContext(eactx.ectx, keyHandle);
+        }
     }
 
-    esys_auxctx_free (&eactx);
-    return (r == TSS2_RC_SUCCESS)? flen : 0;
+    esys_auxctx_free(&eactx);
+    return (r == TSS2_RC_SUCCESS) ? flen : 0;
 }
 
 /** Helper to populate the RSA key object.
@@ -308,7 +288,8 @@ out:
  * @retval 1 on success
  */
 static int
-populate_rsa(RSA *rsa) {
+populate_rsa(RSA *rsa)
+{
     TPM2_DATA *tpm2Data = RSA_get_app_data(rsa);
     UINT32 exponent;
 
@@ -317,7 +298,7 @@ populate_rsa(RSA *rsa) {
 
     exponent = tpm2Data->pub.publicArea.parameters.rsaDetail.exponent;
     if (!exponent)
-	    exponent = 0x10001;
+        exponent = 0x10001;
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
     /* Setting the public portion of the key */
@@ -426,7 +407,7 @@ populate_rsa(RSA *rsa) {
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
     return 1;
-error:
+ error:
     return 0;
 }
 
@@ -448,16 +429,16 @@ tpm2tss_rsa_makekey(TPM2_DATA *tpm2Data)
     DBG("Creating RSA key object.\n");
 
     /* create the new objects to return */
-	if ((pkey = EVP_PKEY_new()) == NULL) {
+    if ((pkey = EVP_PKEY_new()) == NULL) {
         ERR(populate_rsa, ERR_R_MALLOC_FAILURE);
-		return NULL;
-	}
+        return NULL;
+    }
 
-	if ((rsa = RSA_new()) == NULL) {
+    if ((rsa = RSA_new()) == NULL) {
         ERR(populate_rsa, ERR_R_MALLOC_FAILURE);
         EVP_PKEY_free(pkey);
-		return NULL;
-	}
+        return NULL;
+    }
 #if OPENSSL_VERSION_NUMBER < 0x10100000
     rsa->meth = &rsa_methods;
 #else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
@@ -481,7 +462,7 @@ tpm2tss_rsa_makekey(TPM2_DATA *tpm2Data)
     DBG("Created RSA key object.\n");
 
     return pkey;
-error:
+ error:
     EVP_PKEY_free(pkey);
     return NULL;
 }
@@ -504,7 +485,7 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
     DBG("Generating RSA key for %i bits keysize.\n", bits);
 
     TSS2_RC r = TSS2_RC_SUCCESS;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
     ESYS_TR parent = ESYS_TR_NONE;
     TPM2B_PUBLIC *keyPublic = NULL;
     TPM2B_PRIVATE *keyPrivate = NULL;
@@ -547,29 +528,17 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
     } else
         tpm2Data->emptyAuth = 1;
 
-    r = init_tpm_parent (   &eactx,
-                            parentHandle,
-                            &parent);
+    r = init_tpm_parent(&eactx, parentHandle, &parent);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
 
     tpm2Data->parent = parentHandle;
 
     DBG("Generating the RSA key inside the TPM.\n");
 
-    r = Esys_Create (   eactx.ectx,
-                        parent,
-                        ESYS_TR_PASSWORD,
-                        ESYS_TR_NONE,
-                        ESYS_TR_NONE,
-                        &inSensitive,
-                        &inPublic,
-                        &allOutsideInfo,
-                        &allCreationPCR,
-                        &keyPrivate,
-                        &keyPublic,
-                        NULL,
-                        NULL,
-                        NULL);
+    r = Esys_Create(eactx.ectx, parent,
+                    ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                    &inSensitive, &inPublic, &allOutsideInfo, &allCreationPCR,
+                    &keyPrivate, &keyPublic, NULL, NULL, NULL);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
 
     DBG("Generated the RSA key inside the TPM.\n");
@@ -587,19 +556,19 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
     }
 
     goto end;
-error:
+ error:
     r = -1;
     if (tpm2Data)
         OPENSSL_free(tpm2Data);
 
-end:
+ end:
     free(keyPrivate);
     free(keyPublic);
 
     if (parent != ESYS_TR_NONE && !parentHandle)
-        Esys_FlushContext (eactx.ectx, parent);
+        Esys_FlushContext(eactx.ectx, parent);
 
-    esys_auxctx_free (&eactx);
+    esys_auxctx_free(&eactx);
 
     return (r == TSS2_RC_SUCCESS);
 }
@@ -607,21 +576,21 @@ end:
 #if OPENSSL_VERSION_NUMBER < 0x10100000
 RSA_METHOD rsa_methods = {
     "TPM2TSS RSA methods",
-    NULL, /* tpm_rsa_pub_enc */
-    NULL, /* tpm_rsa_pub_dec */
-    rsa_priv_enc, /* act sign */
-    rsa_priv_dec, /* act decrypt */
-    NULL, /* rsa_mod_exp */
-    NULL, /* bn_mod_exp */
-    NULL, /* init */
-    NULL, /* finish */
+    NULL,                       /* tpm_rsa_pub_enc */
+    NULL,                       /* tpm_rsa_pub_dec */
+    rsa_priv_enc,               /* act sign */
+    rsa_priv_dec,               /* act decrypt */
+    NULL,                       /* rsa_mod_exp */
+    NULL,                       /* bn_mod_exp */
+    NULL,                       /* init */
+    NULL,                       /* finish */
     0,
-    NULL, /* app_data */
-    NULL, /* sign */
-    NULL, /* verify */
-    NULL /* genkey */
+    NULL,                       /* app_data */
+    NULL,                       /* sign */
+    NULL,                       /* verify */
+    NULL                        /* genkey */
 };
-#endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+#endif                          /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
 /** Initialize the tpm2tss engine's rsa submodule
  *
@@ -631,7 +600,8 @@ RSA_METHOD rsa_methods = {
  * @retval 0 on failure
  */
 int
-init_rsa(ENGINE *e) {
+init_rsa(ENGINE *e)
+{
 #if OPENSSL_VERSION_NUMBER < 0x10100000
     default_rsa = RSA_PKCS1_SSLeay();
     if (default_rsa == NULL)
@@ -650,8 +620,8 @@ init_rsa(ENGINE *e) {
 
     rsa_methods = RSA_meth_dup(default_rsa);
     RSA_meth_set1_name(rsa_methods, "TPM2TSS RSA methods");
-	RSA_meth_set_priv_enc(rsa_methods, rsa_priv_enc);
-	RSA_meth_set_priv_dec(rsa_methods, rsa_priv_dec);
+    RSA_meth_set_priv_enc(rsa_methods, rsa_priv_enc);
+    RSA_meth_set_priv_dec(rsa_methods, rsa_priv_dec);
 
     return ENGINE_set_RSA(e, rsa_methods);
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
