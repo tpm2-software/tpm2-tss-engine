@@ -39,27 +39,22 @@
 
 #define TMP2TSS_TCTI_NAMEFORMAT "libtss2-tcti-%s.so"
 
-static char*
-tcti_expand_dlname (const char *shortname)
+static char *
+tcti_expand_dlname(const char *shortname)
 {
     char *expanddlname;
-    /*  determine required buffer length and allocate it*/
-    int size = snprintf (NULL,
-                         0,
-                         TMP2TSS_TCTI_NAMEFORMAT,
-                         shortname);
+    /*  determine required buffer length and allocate it */
+    int size = snprintf(NULL, 0, TMP2TSS_TCTI_NAMEFORMAT, shortname);
     if (size <= 0) {
         ERR(tcti_expand_dlname, TPM2TSS_R_GENERAL_FAILURE);
         expanddlname = NULL;
     } else {
-        expanddlname = (char*)OPENSSL_malloc((size_t)(size+1));
+        expanddlname = (char *)OPENSSL_malloc((size_t) (size + 1));
         if (!expanddlname) {
             ERR(tcti_expand_dlname, ERR_R_MALLOC_FAILURE);
         } else {
-            int print_size = snprintf (expanddlname,
-                                       (size+1),
-                                       TMP2TSS_TCTI_NAMEFORMAT,
-                                       shortname);
+            int print_size = snprintf(expanddlname, (size + 1),
+                                      TMP2TSS_TCTI_NAMEFORMAT, shortname);
             if (print_size != size) {
                 ERR(tcti_expand_dlname, TPM2TSS_R_GENERAL_FAILURE);
                 OPENSSL_free(expanddlname);
@@ -71,8 +66,7 @@ tcti_expand_dlname (const char *shortname)
 }
 
 static TSS2_RC
-tcti_dlopen (   const char  *dl_path,
-                dl_handle_t *dlhandle_p)
+tcti_dlopen(const char *dl_path, dl_handle_t *dlhandle_p)
 {
     TSS2_RC r;
     dl_handle_t dlhandle = dlopen(dl_path, RTLD_LAZY);
@@ -102,12 +96,11 @@ tcti_dlopen (   const char  *dl_path,
 /*  Given the handle of a loaded TCTI library, get the pointer to the
     TCTI-initialization function. */
 static TSS2_RC
-tcti_get_init ( dl_handle_t         dlhandle,
-                TSS2_TCTI_INIT_FUNC *init_p)
+tcti_get_init(dl_handle_t dlhandle, TSS2_TCTI_INIT_FUNC *init_p)
 {
     TSS2_RC r;
     TSS2_TCTI_INFO_FUNC getinfo =
-        (TSS2_TCTI_INFO_FUNC)dlsym(dlhandle, TSS2_TCTI_INFO_SYMBOL);
+        (TSS2_TCTI_INFO_FUNC) dlsym(dlhandle, TSS2_TCTI_INFO_SYMBOL);
     if (!getinfo) {
         ERR(tcti_get_init, TPM2TSS_R_DL_INVALID);
         r = TSS2_BASE_RC_BAD_REFERENCE;
@@ -120,7 +113,7 @@ tcti_get_init ( dl_handle_t         dlhandle,
 }
 
 static void
-tcti_dlclose (dl_handle_t *dlhandle_p)
+tcti_dlclose(dl_handle_t *dlhandle_p)
 {
     if (dlhandle_p && *dlhandle_p) {
 #ifndef DISABLE_DLCLOSE
@@ -138,39 +131,34 @@ tcti_dlclose (dl_handle_t *dlhandle_p)
     handle that can be passed to dlsym.
 */
 static TSS2_RC
-__tcti_get_ctx (dl_handle_t         dlhandle,
-                const char          *cfg,
-                TSS2_TCTI_CONTEXT   **ctx_p)
+__tcti_get_ctx(dl_handle_t dlhandle, const char *cfg,
+               TSS2_TCTI_CONTEXT ** ctx_p)
 {
     TSS2_RC r;
     TSS2_TCTI_INIT_FUNC init;
     /*  get the TCTI-initialization function using the library */
-    r = tcti_get_init (dlhandle, &init);
+    r = tcti_get_init(dlhandle, &init);
     if (TPM2_RC_SUCCESS != r) {
-        ERR(__tcti_get_ctx,TPM2TSS_R_GENERAL_FAILURE);
+        ERR(__tcti_get_ctx, TPM2TSS_R_GENERAL_FAILURE);
     } else {
         /* get the TCTI-context size */
         TSS2_TCTI_CONTEXT *ctx = NULL;
         size_t ctx_size = 0;
-        r = init (ctx,
-                  &ctx_size,
-                  cfg);
+        r = init(ctx, &ctx_size, cfg);
         if (TPM2_RC_SUCCESS != r) {
-            ERR(__tcti_get_ctx,TPM2TSS_R_GENERAL_FAILURE);
+            ERR(__tcti_get_ctx, TPM2TSS_R_GENERAL_FAILURE);
         } else {
-            ctx = OPENSSL_malloc (ctx_size);
+            ctx = OPENSSL_malloc(ctx_size);
             if (NULL == ctx) {
-                ERR(__tcti_get_ctx,ERR_R_MALLOC_FAILURE);
+                ERR(__tcti_get_ctx, ERR_R_MALLOC_FAILURE);
                 r = TSS2_BASE_RC_GENERAL_FAILURE;
             } else {
                 memset(ctx, 0, ctx_size);
-                r = init (ctx,
-                          &ctx_size,
-                          cfg);
+                r = init(ctx, &ctx_size, cfg);
                 if (TPM2_RC_SUCCESS != r) {
                     /*  Initialization failed: free the buffer */
                     OPENSSL_free(ctx);
-                    ERR(__tcti_get_ctx,TPM2TSS_R_GENERAL_FAILURE);
+                    ERR(__tcti_get_ctx, TPM2TSS_R_GENERAL_FAILURE);
                 } else {
                     *ctx_p = ctx;
                 }
@@ -184,9 +172,9 @@ static const char *tcti_path = NULL;
 static const char *tcti_cfg = NULL;
 
 void
-tcti_clear_opts (void)
+tcti_clear_opts(void)
 {
-    OPENSSL_free((void*)tcti_path);
+    OPENSSL_free((void *)tcti_path);
     tcti_path = NULL;
     tcti_cfg = NULL;
 }
@@ -198,19 +186,19 @@ tcti_clear_opts (void)
     NOTE: opts may be NULL.
 */
 TSS2_RC
-tcti_set_opts (const char *opts)
+tcti_set_opts(const char *opts)
 {
-    /*  Valid opts may be one of the following:
-        case A: NULL         --> path=NULL,      cfg=NULL
-        case B: \0           --> path=\0,        cfg=NULL
-        case C: path\0       --> path=path\0,    cfg=NULL
-        case D: path:\0      --> path=path\0,    cfg=\0
-        case E: path:cfg\0   --> path=path\0,    cfg=cfg\0
+    /* Valid opts may be one of the following:
+       case A: NULL         --> path=NULL,      cfg=NULL
+       case B: \0           --> path=\0,        cfg=NULL
+       case C: path\0       --> path=path\0,    cfg=NULL
+       case D: path:\0      --> path=path\0,    cfg=\0
+       case E: path:cfg\0   --> path=path\0,    cfg=cfg\0
 
-        Following opts are invalid (cfg without path. must be explicitly
-        handled, because dlopen("") returns handle of main program):
-        case F: :\0          --> path=\0,        cfg=\0
-        case G: :cfg\0       --> path=\0,        cfg=\0
+       Following opts are invalid (cfg without path. must be explicitly
+       handled, because dlopen("") returns handle of main program):
+       case F: :\0          --> path=\0,        cfg=\0
+       case G: :cfg\0       --> path=\0,        cfg=\0
      */
     TSS2_RC r;
     char *path, *cfg;
@@ -221,7 +209,7 @@ tcti_set_opts (const char *opts)
         cfg = NULL;
         r = TSS2_RC_SUCCESS;
     } else {
-        path = (char*)OPENSSL_strdup(opts);
+        path = (char *)OPENSSL_strdup(opts);
         if (!path) {
             ERR(tcti_set_opts, ERR_R_MALLOC_FAILURE);
             r = TSS2_BASE_RC_MEMORY;
@@ -232,7 +220,7 @@ tcti_set_opts (const char *opts)
                 cfg = NULL;
                 r = TSS2_RC_SUCCESS;
             } else {
-                if (split==path) {
+                if (split == path) {
                     /* case F and case G */
                     ERR(tcti_set_opts, TPM2TSS_R_GENERAL_FAILURE);
                     /* Invalid opts: free the buffer */
@@ -241,7 +229,7 @@ tcti_set_opts (const char *opts)
                 } else {
                     /* case D and case E */
                     split[0] = '\0';
-                    cfg = split+1;
+                    cfg = split + 1;
                     r = TSS2_RC_SUCCESS;
                 }
             }
@@ -265,8 +253,7 @@ tcti_set_opts (const char *opts)
  * code on failure.
  */
 TSS2_RC
-tcti_get_ctx (  TSS2_TCTI_CONTEXT   **ctx_p,
-                dl_handle_t         *dlhandle_p)
+tcti_get_ctx(TSS2_TCTI_CONTEXT **ctx_p, dl_handle_t *dlhandle_p)
 {
     TSS2_RC r;
     if (!ctx_p || !dlhandle_p) {
@@ -280,14 +267,12 @@ tcti_get_ctx (  TSS2_TCTI_CONTEXT   **ctx_p,
         } else {
             /*  open the shared library at path */
             dl_handle_t dlhandle;
-            r = tcti_dlopen (tcti_path, &dlhandle);
+            r = tcti_dlopen(tcti_path, &dlhandle);
             if (TPM2_RC_SUCCESS != r) {
                 ERR(tcti_get_ctx, TPM2TSS_R_GENERAL_FAILURE);
             } else {
                 /*  allocate and initialize the TCTI context */
-                r = __tcti_get_ctx (dlhandle,
-                                    tcti_cfg,
-                                    ctx_p);
+                r = __tcti_get_ctx(dlhandle, tcti_cfg, ctx_p);
                 if (TPM2_RC_SUCCESS == r) {
                     *dlhandle_p = dlhandle;
                 } else {
@@ -310,8 +295,7 @@ tcti_get_ctx (  TSS2_TCTI_CONTEXT   **ctx_p,
  * code on failure.
  */
 TSS2_RC
-tcti_free_ctx ( TSS2_TCTI_CONTEXT   **ctx_p,
-                dl_handle_t         *dlhandle_p)
+tcti_free_ctx(TSS2_TCTI_CONTEXT **ctx_p, dl_handle_t *dlhandle_p)
 {
     TSS2_RC r;
     if (!ctx_p || !dlhandle_p) {
@@ -328,4 +312,3 @@ tcti_free_ctx ( TSS2_TCTI_CONTEXT   **ctx_p,
     }
     return r;
 }
-

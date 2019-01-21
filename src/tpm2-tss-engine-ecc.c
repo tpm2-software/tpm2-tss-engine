@@ -54,9 +54,11 @@ EC_KEY_METHOD *ecc_methods = NULL;
 static TPM2B_DATA allOutsideInfo = {
     .size = 0,
 };
+
 static TPML_PCR_SELECTION allCreationPCR = {
     .count = 0,
 };
+
 static TPM2B_PUBLIC keyEcTemplate = {
     .publicArea = {
         .type = TPM2_ALG_ECC,
@@ -129,8 +131,8 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
     DBG("ecdsa_sign called for input data(size=%i):\n", dgst_len);
     DBGBUF(dgst, dgst_len);
 
-	TSS2_RC r;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
+    TSS2_RC r;
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPMT_SIGNATURE *sig = NULL;
 
@@ -148,38 +150,30 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
     memcpy(&digest.buffer[0], dgst, dgst_len);
 
     /* Infer hashAlg from dgst_len */
-	switch (dgst_len) {
-	case SHA_DIGEST_LENGTH:
-		inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA1;
-		break;
-	case SHA256_DIGEST_LENGTH:
-		inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA256;
-		break;
-	case SHA384_DIGEST_LENGTH:
-		inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA384;
-		break;
-	case SHA512_DIGEST_LENGTH:
-		inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA512;
-		break;
-	default:
+    switch (dgst_len) {
+    case SHA_DIGEST_LENGTH:
+        inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA1;
+        break;
+    case SHA256_DIGEST_LENGTH:
+        inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA256;
+        break;
+    case SHA384_DIGEST_LENGTH:
+        inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA384;
+        break;
+    case SHA512_DIGEST_LENGTH:
+        inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA512;
+        break;
+    default:
         ERR(rsa_priv_enc, TPM2TSS_R_PADDING_UNKNOWN);
-		goto error;
-	}
+        goto error;
+    }
 
-    r = init_tpm_key (  &eactx,
-                        &keyHandle,
-                        tpm2Data);
+    r = init_tpm_key(&eactx, &keyHandle, tpm2Data);
     ERRchktss(ecdsa_sign, r, goto error);
 
-    r = Esys_Sign ( eactx.ectx,
-                    keyHandle,
-                    ESYS_TR_PASSWORD,
-                    ESYS_TR_NONE,
-                    ESYS_TR_NONE,
-                    &digest,
-                    &inScheme,
-                    &validation,
-                    &sig);
+    r = Esys_Sign(eactx.ectx, keyHandle,
+                  ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                  &digest, &inScheme, &validation, &sig);
     ERRchktss(ecdsa_sign, r, goto error);
 
     ret = ECDSA_SIG_new();
@@ -189,11 +183,9 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
     }
 
     bns = BN_bin2bn(&sig->signature.ecdsa.signatureS.buffer[0],
-                    sig->signature.ecdsa.signatureS.size,
-                    NULL);
+                    sig->signature.ecdsa.signatureS.size, NULL);
     bnr = BN_bin2bn(&sig->signature.ecdsa.signatureR.buffer[0],
-                    sig->signature.ecdsa.signatureR.size,
-                    NULL);
+                    sig->signature.ecdsa.signatureR.size, NULL);
     if (!bns || !bnr) {
         ERR(ecdsa_sign, ERR_R_MALLOC_FAILURE);
         goto error;
@@ -207,23 +199,26 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
     goto out;
-error:
+ error:
     r = -1;
-out:
+ out:
     free(sig);
     if (keyHandle != ESYS_TR_NONE)
-        Esys_FlushContext (eactx.ectx, keyHandle);
+        Esys_FlushContext(eactx.ectx, keyHandle);
     if (r != TSS2_RC_SUCCESS && ret != NULL) {
-        if (bns) BN_free(bns);
-        if (bnr) BN_free(bnr);
+        if (bns)
+            BN_free(bns);
+        if (bnr)
+            BN_free(bnr);
     }
     if (r != TSS2_RC_SUCCESS) {
-        if (ret) ECDSA_SIG_free(ret);
+        if (ret)
+            ECDSA_SIG_free(ret);
         ret = NULL;
     }
 
-    esys_auxctx_free (&eactx);
-    return (r == TSS2_RC_SUCCESS)? ret : NULL;
+    esys_auxctx_free(&eactx);
+    return (r == TSS2_RC_SUCCESS) ? ret : NULL;
 }
 
 /** Helper to populate the ECC key object.
@@ -236,7 +231,8 @@ out:
  * @retval 1 on success
  */
 static int
-populate_ecc(EC_KEY *key) {
+populate_ecc(EC_KEY *key)
+{
     EC_GROUP *ecgroup = NULL;
     int nid;
     BIGNUM *x = NULL, *y = NULL;
@@ -244,7 +240,7 @@ populate_ecc(EC_KEY *key) {
     if (tpm2Data == NULL)
         return 0;
 
-    switch(tpm2Data->pub.publicArea.parameters.eccDetail.curveID) {
+    switch (tpm2Data->pub.publicArea.parameters.eccDetail.curveID) {
     case TPM2_ECC_NIST_P256:
         nid = EC_curve_nist2nid("P-256");
         break;
@@ -311,17 +307,17 @@ tpm2tss_ecc_makekey(TPM2_DATA *tpm2Data)
     EC_KEY *eckey;
 
     /* create the new objects to return */
-	if ((pkey = EVP_PKEY_new()) == NULL) {
+    if ((pkey = EVP_PKEY_new()) == NULL) {
         ERR(tpm2tss_ecc_makekey, ERR_R_MALLOC_FAILURE);
-		return NULL;
-	}
+        return NULL;
+    }
 
-	if ((eckey = EC_KEY_new()) == NULL) {
+    if ((eckey = EC_KEY_new()) == NULL) {
         ERR(tpm2tss_ecc_makekey, ERR_R_MALLOC_FAILURE);
         EVP_PKEY_free(pkey);
-		return NULL;
-	}
 
+        return NULL;
+    }
 #if OPENSSL_VERSION_NUMBER < 0x10100000
     if (!ECDSA_set_method(eckey, ecc_methods)) {
 #else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
@@ -349,7 +345,7 @@ tpm2tss_ecc_makekey(TPM2_DATA *tpm2Data)
     DBG("Created ECC key object.\n");
 
     return pkey;
-error:
+ error:
     EVP_PKEY_free(pkey);
     return NULL;
 }
@@ -419,7 +415,7 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     DBG("GenKey for ecdsa.\n");
 
     TSS2_RC r;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
+    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
     ESYS_TR parent = ESYS_TR_NONE;
     TPM2B_PUBLIC *keyPublic = NULL;
     TPM2B_PRIVATE *keyPrivate = NULL;
@@ -460,29 +456,17 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     } else
         tpm2Data->emptyAuth = 1;
 
-    r = init_tpm_parent (   &eactx,
-                            parentHandle,
-                            &parent);
+    r = init_tpm_parent(&eactx, parentHandle, &parent);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
 
     tpm2Data->parent = parentHandle;
 
     DBG("Generating the ECC key inside the TPM.\n");
 
-    r = Esys_Create (   eactx.ectx,
-                        parent,
-                        ESYS_TR_PASSWORD,
-                        ESYS_TR_NONE,
-                        ESYS_TR_NONE,
-                        &inSensitive,
-                        &inPublic,
-                        &allOutsideInfo,
-                        &allCreationPCR,
-                        &keyPrivate,
-                        &keyPublic,
-                        NULL,
-                        NULL,
-                        NULL);
+    r = Esys_Create(eactx.ectx, parent,
+                    ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                    &inSensitive, &inPublic, &allOutsideInfo, &allCreationPCR,
+                    &keyPrivate, &keyPublic, NULL, NULL, NULL);
     ERRchktss(tpm2tss_rsa_genkey, r, goto error);
 
     DBG("Generated the ECC key inside the TPM.\n");
@@ -500,20 +484,20 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     }
 
     goto end;
-error:
+ error:
     r = -1;
     tpm2tss_ecc_setappdata(key, NULL);
     if (tpm2Data)
         OPENSSL_free(tpm2Data);
 
-end:
+ end:
     free(keyPrivate);
     free(keyPublic);
 
     if (parent != ESYS_TR_NONE && !parentHandle)
-        Esys_FlushContext (eactx.ectx, parent);
+        Esys_FlushContext(eactx.ectx, parent);
 
-    esys_auxctx_free (&eactx);
+    esys_auxctx_free(&eactx);
 
     return (r == TSS2_RC_SUCCESS);
 }
@@ -526,7 +510,8 @@ end:
  * @retval 0 on failure
  */
 int
-init_ecc(ENGINE *e) {
+init_ecc(ENGINE *e)
+{
     (void)(e);
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
@@ -551,10 +536,10 @@ init_ecc(ENGINE *e) {
     if (ecc_methods == NULL)
         return 0;
 
-    int (*orig_sign)(int, const unsigned char *, int, unsigned char *,
-                     unsigned int *, const BIGNUM *, const BIGNUM *, EC_KEY *)
-        = NULL; 
-    EC_KEY_METHOD_get_sign(ecc_methods, &orig_sign, NULL, NULL); 
+    int (*orig_sign) (int, const unsigned char *, int, unsigned char *,
+                      unsigned int *, const BIGNUM *, const BIGNUM *, EC_KEY *)
+        = NULL;
+    EC_KEY_METHOD_get_sign(ecc_methods, &orig_sign, NULL, NULL);
     EC_KEY_METHOD_set_sign(ecc_methods, orig_sign, NULL, ecdsa_sign);
 
     if (ec_key_app_data == -1)

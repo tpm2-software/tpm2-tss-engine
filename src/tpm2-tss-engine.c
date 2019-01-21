@@ -105,22 +105,22 @@ get_auth(const char *prompt_info, UI_METHOD *ui_method, void *cb_data,
     DBG("password is %s\n", (char *)&auth->buffer[0]);
 
     return 1;
-error:
-    if (ui_prompt) OPENSSL_free(ui_prompt);
-    if (ui) UI_free(ui);
+ error:
+    if (ui_prompt)
+        OPENSSL_free(ui_prompt);
+    if (ui)
+        UI_free(ui);
     return 0;
 }
 
 static const ENGINE_CMD_DEFN cmd_defns[] = {
-	{TPM2TSS_SET_OWNERAUTH,
-	 "SET_OWNERAUTH",
-	 "Set the password for the owner hierarchy (default none)",
-	 ENGINE_CMD_FLAG_STRING},
-	{TPM2TSS_SET_TCTI,
-	 "SET_TCTI",
-	 "Set the TCTI module and options (default none)",
-	 ENGINE_CMD_FLAG_STRING},
-	{0, NULL, NULL, 0}
+    { TPM2TSS_SET_OWNERAUTH, "SET_OWNERAUTH",
+     "Set the password for the owner hierarchy (default none)",
+     ENGINE_CMD_FLAG_STRING },
+    { TPM2TSS_SET_TCTI, "SET_TCTI",
+     "Set the TCTI module and options (default none)",
+     ENGINE_CMD_FLAG_STRING },
+    {0, NULL, NULL, 0}
 };
 
 static int
@@ -129,40 +129,40 @@ engine_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) ())
     (void)(e);
     (void)(i);
     (void)(f);
-	switch (cmd) {
-		case TPM2TSS_SET_OWNERAUTH:
-            if (!p) {
-                DBG("Setting owner auth to empty auth.\n");
-                ownerauth.size = 0;
-                return 1;
-            }
-            DBG("Setting owner auth to password.\n");
-            if (strlen((char *)p) > sizeof(ownerauth.buffer) - 1) {
+    switch (cmd) {
+    case TPM2TSS_SET_OWNERAUTH:
+        if (!p) {
+            DBG("Setting owner auth to empty auth.\n");
+            ownerauth.size = 0;
+            return 1;
+        }
+        DBG("Setting owner auth to password.\n");
+        if (strlen((char *)p) > sizeof(ownerauth.buffer) - 1) {
+            return 0;
+        }
+        ownerauth.size = strlen((char *)p);
+        memcpy(&ownerauth.buffer[0], p, ownerauth.size);
+        return 1;
+    case TPM2TSS_SET_TCTI:
+        tcti_clear_opts();
+        if (!p) {
+            DBG("Setting TCTI to the ESAPI default\n");
+            return 1;
+        } else {
+            TSS2_RC r = tcti_set_opts(p);
+            if (TPM2_RC_SUCCESS != r) {
+                ERR(init_engine, TPM2TSS_R_GENERAL_FAILURE);
                 return 0;
-            }
-            ownerauth.size = strlen((char *)p);
-            memcpy(&ownerauth.buffer[0], p, ownerauth.size);
-			return 1;
-        case TPM2TSS_SET_TCTI:
-            tcti_clear_opts ();
-            if (!p) {
-                DBG("Setting TCTI to the ESAPI default\n");
-                return 1;
             } else {
-                TSS2_RC r = tcti_set_opts (p);
-                if (TPM2_RC_SUCCESS != r) {
-                    ERR(init_engine, TPM2TSS_R_GENERAL_FAILURE);
-                    return 0;
-                } else {
-                    DBG("Setting TCTI option to \"%s\"\n", (char*)p);
-                    return 1;
-                }
+                DBG("Setting TCTI option to \"%s\"\n", (char *)p);
+                return 1;
             }
-		default:
-			break;
-	}
+        }
+    default:
+        break;
+    }
     ERR(engine_ctrl, TPM2TSS_R_UNKNOWN_CTRL);
-	return 0;
+    return 0;
 }
 
 /** Load a TPM2TSS key
@@ -208,7 +208,7 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
 
     DBG("Loaded key uses alg-id %x\n", tpm2Data->pub.publicArea.type);
 
-    switch(tpm2Data->pub.publicArea.type) {
+    switch (tpm2Data->pub.publicArea.type) {
     case TPM2_ALG_RSA:
         pkey = tpm2tss_rsa_makekey(tpm2Data);
         break;
@@ -224,10 +224,10 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
         goto error;
     }
 
-	DBG("TPM2 Key loaded\n");
+    DBG("TPM2 Key loaded\n");
 
     return pkey;
-error:
+ error:
     return NULL;
 }
 
@@ -256,7 +256,7 @@ init_engine(ENGINE *e) {
     /*  Set the default TCTI option from the environment */
     char *tctienvvar = getenv("TPM2TSSENGINE_TCTI");
     if (tctienvvar) {
-        TSS2_RC r = tcti_set_opts (tctienvvar);
+        TSS2_RC r = tcti_set_opts(tctienvvar);
         if (TPM2_RC_SUCCESS != r) {
             ERR(init_engine, TPM2TSS_R_GENERAL_FAILURE);
             return 0;
@@ -296,7 +296,7 @@ static int
 destroy_engine(ENGINE *e)
 {
     (void)(e);
-    tcti_clear_opts ();
+    tcti_clear_opts();
     ERR_unload_TPM2TSS_strings();
     return 1;
 }
@@ -310,7 +310,8 @@ destroy_engine(ENGINE *e)
  * @retval 1 on success
  */
 static int
-bind(ENGINE *e, const char *id) {
+bind(ENGINE *e, const char *id)
+{
     (void)(id);
 
     if (!ENGINE_set_id(e, engine_id)) {
@@ -351,7 +352,7 @@ bind(ENGINE *e, const char *id) {
 
     ERR_load_TPM2TSS_strings();
     return 1;
-end:
+ end:
     return 0;
 }
 
