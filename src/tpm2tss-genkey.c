@@ -206,8 +206,8 @@ genkey_rsa()
 {
     VERB("Generating RSA key using TPM\n");
 
-    RSA * rsa = NULL;
-    BIGNUM * e = BN_new();
+    RSA *rsa = NULL;
+    BIGNUM *e = BN_new();
     if (!e) {
         ERR("out of memory\n");
         return NULL;
@@ -301,14 +301,16 @@ main(int argc, char **argv)
 
     /* Openssl 1.1.0 requires the lib-prefix for the engine_id */
     ENGINE *tpm_engine = ENGINE_by_id("tpm2tss");
-    if (!tpm_engine) tpm_engine = ENGINE_by_id("libtpm2tss");
+    if (!tpm_engine)
+        tpm_engine = ENGINE_by_id("libtpm2tss");
     if (tpm_engine == NULL) {
         ERR("Could not load tpm2tss engine\n");
         return 1;
     }
 
     int init_res = ENGINE_init(tpm_engine);
-    VERB("Engine name: %s\nInit result: %d \n", ENGINE_get_name(tpm_engine), init_res);
+    VERB("Engine name: %s\nInit result: %d \n", ENGINE_get_name(tpm_engine),
+         init_res);
     if (!init_res)
         return 1;
 
@@ -319,7 +321,7 @@ main(int argc, char **argv)
 
     /* Generate the key */
     VERB("Generating the key\n");
-    switch(opt.alg) {
+    switch (opt.alg) {
     case TPM2_ALG_RSA:
         tpm2Data = genkey_rsa();
         break;
