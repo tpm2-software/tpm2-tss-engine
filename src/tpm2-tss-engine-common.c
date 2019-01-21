@@ -54,6 +54,11 @@ IMPLEMENT_PEM_read_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY
 
 /** Initialize the Auxiliary Esys context
  *
+ * Initialize an extended Esys context that further includes a dlhandle.
+ * @param eaxctx_p The context to initialize.
+ * @retval TSS2_RC_SUCCESS on success
+ * @retval TSS2_BASE_RC_BAD_REFERENCE if no pointer was provided
+ * @retval Errors from Tcti initialization or Esys_Initialize()
  */
 TSS2_RC
 esys_auxctx_init(ESYS_AUXCONTEXT *eactx_p)
@@ -87,6 +92,12 @@ esys_auxctx_init(ESYS_AUXCONTEXT *eactx_p)
 
 /** Finalize the Auxiliary Esys context
  *
+ * Get the TCTI context and finalize this alognside the Esys context.
+ * Also close the dlhandle if one was opened.
+ * @param eaxctx_p The extended Esys context
+ * @retval TSS2_RC_SUCCESS on success
+ * @retval TSS2_BASE_RC_BAD_REFERENCE if no pointer was provided
+ * @retval Errors from Esys_GetTcti()
  */
 TSS2_RC
 esys_auxctx_free(ESYS_AUXCONTEXT *eactx_p)
