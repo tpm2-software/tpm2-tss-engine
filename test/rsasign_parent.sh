@@ -30,6 +30,9 @@ cat ${DIR}/mykey.pub
 
 echo "abc" | openssl pkeyutl -engine tpm2tss -keyform engine -inkey ${DIR}/mykey -sign -in ${DIR}/mydata.txt -out ${DIR}/mysig -passin stdin
 
+# Release persistent HANDLE
+tpm2_evictcontrol -T mssim -a o -c ${HANDLE} -p ${HANDLE}
+
 cat ${DIR}/mysig
 
 #this is a workaround because -verify allways exits 1

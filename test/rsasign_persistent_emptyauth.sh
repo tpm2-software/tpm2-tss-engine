@@ -49,9 +49,7 @@ fi
 tpm2_readpublic -T mssim -c ${HANDLE} -o ${DIR}/mykey.pem -f pem
 
 # Release persistent HANDLE
-tpm2_evictcontrol -T mssim -a o -c ${HANDLE}
-
-tpm2_flushcontext -T mssim -t -l
+tpm2_evictcontrol -T mssim -a o -c ${HANDLE} -p ${HANDLE}
 
 R="$(openssl pkeyutl -pubin -inkey ${DIR}/mykey.pem -verify -in ${DIR}/mydata.txt -sigfile ${DIR}/mysig || true)"
 if ! echo $R | grep "Signature Verified Successfully" >/dev/null; then
