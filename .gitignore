@@ -37,3 +37,7 @@ test-driver
 man/*.1
 man/*.3
 man/*.7
+.dirstamp
+*~
+test/error_tpm2-tss-engine-common
+test/*.o

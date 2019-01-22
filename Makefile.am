@@ -97,17 +97,31 @@ tpm2tss_genkey_LDADD = $(AM_LDADD) libtpm2tss.la
 tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS) -ltss2-tcti-mssim -ltss2-tcti-device
 
 ### Tests ###
-TESTS = test/ecdsa.sh \
-        test/ecdsa-emptyauth.sh \
-        test/rand.sh \
-        test/rsadecrypt.sh \
-        test/rsasign.sh \
-        test/failload.sh \
-        test/failwrite.sh \
-        test/rsasign_parent.sh \
-        test/rsasign_persistent.sh \
-        test/rsasign_persistent_emptyauth.sh
-EXTRA_DIST += $(TESTS)
+TESTS = $(TESTS_SHELL) $(TESTS_UNIT)
+#TESTS = $(TESTS_UNIT)
+
+TESTS_SHELL = test/ecdsa.sh \
+              test/ecdsa-emptyauth.sh \
+              test/rand.sh \
+              test/rsadecrypt.sh \
+              test/rsasign.sh \
+              test/failload.sh \
+              test/failwrite.sh \
+              test/rsasign_parent.sh \
+              test/rsasign_persistent.sh \
+              test/rsasign_persistent_emptyauth.sh
+EXTRA_DIST += $(TESTS_SHELL)
+
+check_PROGRAMS = $(TESTS_UNIT)
+
+TESTS_UNIT = test/error_tpm2-tss-engine-common
+
+test_error_tpm2_tss_engine_common_CFLAGS =  $(AM_CFLAGS) $(CMOCKA_CFLAGS)
+test_error_tpm2_tss_engine_common_LDADD =   $(AM_LDADD) $(CMOCKA_LIBS)
+test_error_tpm2_tss_engine_common_LDFLAGS = $(AM_LDFLAGS) -Wl,--wrap=Esys_Initialize
+test_error_tpm2_tss_engine_common_SOURCES = test/error_tpm2-tss-engine-common.c \
+                                            $(libtpm2tss_la_SOURCES)
+
 
 # Adding user and developer information
 EXTRA_DIST += \

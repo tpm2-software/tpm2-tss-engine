@@ -140,6 +140,10 @@ AS_IF([test -z "$with_completionsdir"],
     [with_completionsdir=$datarootdir/bash-completion/completions])
 AC_SUBST(completionsdir, "$with_completionsdir")
 
+m4_define([cmocka_min_version], [1.0])
+m4_define([cmocka_err], [Unit test enabled, but cmocka missing or version requirements not met. cmocka version must be >= cmocka_min_version])
+PKG_CHECK_MODULES([CMOCKA], [cmocka >= 1.0])
+
 AC_OUTPUT
 
 AC_MSG_RESULT([
