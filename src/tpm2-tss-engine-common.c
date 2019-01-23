@@ -194,7 +194,6 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     ESYS_TR keyHandle = ESYS_TR_NONE;
     ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT){0};
     TPM2B_PUBLIC *outPublic;
-    ESYS_TR session = ESYS_TR_NONE;
 
     tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
@@ -243,10 +242,12 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         goto error;
     }
 
+#ifdef TSS22
     /* If the persistent key has the NODA flag set, we check whether it does
        have an empty authValue. If NODA is not set, then we don't check because
        that would increment the DA lockout counter */
     if ((outPublic->publicArea.objectAttributes & TPMA_OBJECT_NODA) != 0) {
+        ESYS_TR session;
         TPMT_SYM_DEF sym = {.algorithm = TPM2_ALG_AES,
                             .keyBits = {.aes = 128},
                             .mode = {.aes = TPM2_ALG_CFB}
@@ -268,7 +269,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         /* Though this response code is sub-optimal, it's the only way to
            detect the bug in ESYS. */
         if (r == TSS2_ESYS_RC_GENERAL_FAILURE) {
-            DBG("Running tpm2-tss < 2.2 which has a bug here. Requiring auth.");
+            ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_OLD_TSS);
             tpm2Data->emptyAuth = 0;
             goto session_error;
         } else if (r) {
@@ -306,10 +307,13 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
             ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
             goto error;
         }
+
+        Esys_FlushContext (eactx.ectx, session);
     }
 
-    if (session != ESYS_TR_NONE) Esys_FlushContext (eactx.ectx, session);
 session_error:
+#endif /* TSS22 */
+
     Esys_TR_Close (eactx.ectx, &keyHandle);
 
     esys_auxctx_free (&eactx);
@@ -319,7 +323,6 @@ session_error:
     *tpm2Datap = tpm2Data;
     return 1;
 error:
-    if (session != ESYS_TR_NONE) Esys_FlushContext (eactx.ectx, session);
     if (keyHandle != ESYS_TR_NONE)
         Esys_TR_Close (eactx.ectx, &keyHandle);
     esys_auxctx_free (&eactx);
