@@ -123,5 +123,6 @@ void ERR_error(int function, int reason, const char *file, int line);
 /* TPM/TSS Reasons that are useful to the user */
 #define TPM2TSS_R_AUTH_FAILURE          150
 #define TPM2TSS_R_OWNER_AUTH_FAILED     151
+#define TPM2TSS_R_OLD_TSS               152
 
 #endif /* TPM2_TSS_ENGINE_ERR_H */

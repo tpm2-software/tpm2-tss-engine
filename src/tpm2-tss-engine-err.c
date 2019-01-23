@@ -100,6 +100,7 @@ static ERR_STRING_DATA TPM2TSS_r[] = {
     /* TPM/TSS Reasons that are useful to the user */
     ERR_R(TPM2TSS_R_AUTH_FAILURE, Authorization failed),
     ERR_R(TPM2TSS_R_OWNER_AUTH_FAILED, Owner authorization failed),
+    ERR_R(TPM2TSS_R_OLD_TSS, An old TSS (<2.2) was detected and a TPM session may have leaked),
     {0, NULL}
 };
 #endif /* OPENSSL_NO_ERR */
