@@ -142,6 +142,20 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 
     TPMT_SIG_SCHEME inScheme = { .scheme = TPM2_ALG_ECDSA };
 
+    /* ECDSA says to truncate the incoming hash to fit the curve. */
+    switch (tpm2Data->pub.publicArea.parameters.eccDetail.curveID) {
+    case TPM2_ECC_NIST_P256:
+        if (dgst_len > 256/8)
+            dgst_len = 256/8;
+        break;
+    case TPM2_ECC_NIST_P384:
+        if (dgst_len > 384/8)
+            dgst_len = 384/8;
+        break;
+    default:
+        break;
+    }
+
     TPM2B_DIGEST digest = { .size = dgst_len };
     if (digest.size > sizeof(digest.buffer)) {
         ERR(rsa_priv_enc, TPM2TSS_R_DIGEST_TOO_LARGE);
