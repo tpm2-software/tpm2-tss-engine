@@ -56,12 +56,6 @@ rand_bytes(unsigned char *buf, int num)
     r = esys_auxctx_init(&eactx);
     ERRchktss(rand_bytes, r, goto end);
 
-    r = Esys_Startup(eactx.ectx, TPM2_SU_CLEAR);
-    if (r == TPM2_RC_INITIALIZE)
-        DBG("TPM already started up. False positive error in tpm2tss log.\n");
-    else
-        ERRchktss(rand_bytes, r, goto end);
-
     TPM2B_DIGEST *b;
     while (num > 0) {
         r = Esys_GetRandom(eactx.ectx,

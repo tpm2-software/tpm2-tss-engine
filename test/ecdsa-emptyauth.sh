@@ -9,6 +9,9 @@ export PATH=${PWD}:${PATH}
 
 DIR=$(mktemp -d)
 echo -n "abcde12345abcde12345">${DIR}/mydata
+
+tpm2_startup -T mssim -c || true
+
 tpm2tss-genkey -a ecdsa -c nist_p256 ${DIR}/mykey
 
 openssl pkeyutl -keyform engine -engine tpm2tss -inkey ${DIR}/mykey -sign -in ${DIR}/mydata -out ${DIR}/mysig
