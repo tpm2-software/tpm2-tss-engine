@@ -10,6 +10,9 @@ export PATH=${PWD}:${PATH}
 DIR=$(mktemp -d)
 echo -n "abcde12345abcde12345">${DIR}/mykey
 chmod ugo-rwx ${DIR}/mykey
+
+tpm2_startup -T mssim -c || true
+
 R="$(openssl rsa -engine tpm2tss -inform engine -in ${DIR}/mykey -pubout -outform pem -out ${DIR}/mykey.pub 2>&1 || true)"
 echo $R
 if ! echo $R | grep "unable to load Private Key" >/dev/null; then

@@ -224,13 +224,6 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         goto error;
     }
 
-    r = Esys_Startup(eactx.ectx, TPM2_SU_CLEAR);
-    if (r == TPM2_RC_INITIALIZE)
-        DBG("TPM was already started up thus false positive failing in tpm2tss"
-            " log.\n");
-    else
-        ERRchktss(tpm2tss_tpm2data_readtpm, r, goto error);
-
     r = Esys_TR_FromTPMPublic(eactx.ectx, tpm2Data->handle,
                               ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
                               &keyHandle);
@@ -443,13 +436,6 @@ init_tpm_parent(ESYS_AUXCONTEXT *eactx_p,
     r = esys_auxctx_init(eactx_p);
     ERRchktss(init_tpm_parent, r, goto error);
 
-    r = Esys_Startup(eactx_p->ectx, TPM2_SU_CLEAR);
-    if (r == TPM2_RC_INITIALIZE)
-        DBG("TPM was already started up thus false positive failing in tpm2tss"
-            " log.\n");
-    else
-        ERRchktss(init_tpm_parent, r, goto error);
-
     if (parentHandle && parentHandle != TPM2_RH_OWNER) {
         DBG("Connecting to a persistent parent key.\n");
         r = Esys_TR_FromTPMPublic(eactx_p->ectx, parentHandle,
@@ -508,13 +494,6 @@ init_tpm_key (ESYS_AUXCONTEXT *eactx_p, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
         DBG("Establishing connection with TPM.\n");
         r = esys_auxctx_init(eactx_p);
         ERRchktss(init_tpm_key, r, goto error);
-
-        r = Esys_Startup(eactx_p->ectx, TPM2_SU_CLEAR);
-        if (r == TPM2_RC_INITIALIZE)
-            DBG("TPM was already started up thus false positive failing in tpm2tss"
-                " log.\n");
-        else
-            ERRchktss(init_tpm_key, r, goto error);
 
         r = Esys_TR_FromTPMPublic(eactx_p->ectx, tpm2Data->handle,
                                   ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
