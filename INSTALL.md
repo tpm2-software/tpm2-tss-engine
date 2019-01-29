@@ -2,6 +2,7 @@
 
 ## GNU/Linux
 * GNU Autoconf
+* GNU Autoconf Archive
 * GNU Automake
 * GNU Libtool
 * C compiler
@@ -16,6 +17,7 @@
 sudo apt -y install \
   build-essential \
   autoconf \
+  autoconf-archive \
   automake \
   m4 \
   libtool \

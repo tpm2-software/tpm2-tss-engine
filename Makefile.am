@@ -50,7 +50,13 @@ bin_PROGRAMS =
 
 ### Add ax_* rules ###
 # ax_code_coverage
+if AUTOCONF_CODE_COVERAGE_2019_01_06
+include $(top_srcdir)/aminclude_static.am
+clean-local: code-coverage-clean
+distclean-local: code-coverage-dist-clean
+else
 @CODE_COVERAGE_RULES@
+endif
 
 ### OpenSSL Engine ###
 openssl_enginedir = $(ENGINESDIR)
