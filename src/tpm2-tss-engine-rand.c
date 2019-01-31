@@ -78,8 +78,8 @@ rand_bytes(unsigned char *buf, int num)
 /** Return the entropy status of the prng
  *
  * Since we provide real (TPM-based) randomness even for the pseudorand
- * function, our status is allways good.
- * @retval 1 allways good status
+ * function, our status is always good.
+ * @retval 1 always good status
  */
 static int
 rand_status()

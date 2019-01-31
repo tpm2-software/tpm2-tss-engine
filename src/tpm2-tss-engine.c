@@ -329,7 +329,7 @@ bind(ENGINE *e, const char *id)
         goto end;
     }
 
-    /* The init function is not allways called so we initialize crypto methods
+    /* The init function is not always called so we initialize crypto methods
        directly from bind. */
     if (!init_engine(e)) {
         DBG("tpm2tss enigne initialization failed\n");
