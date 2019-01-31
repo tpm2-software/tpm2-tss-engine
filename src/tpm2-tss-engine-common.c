@@ -260,7 +260,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         /* Though this response code is sub-optimal, it's the only way to
            detect the bug in ESYS. */
         if (r == TSS2_ESYS_RC_GENERAL_FAILURE) {
-            DBG("Running tpm2-tss < 2.2 which has a bug here. Requiring auth.");
+            DBG("Running tpm2-tss < 2.2 which has a bug here. Requiring auth.\n");
             tpm2Data->emptyAuth = 0;
             goto session_error;
         } else if (r) {
@@ -281,10 +281,10 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
            above leading to a password query in case of empty auth and (2) it
            may return an error because the object's auth value is "\0". */
         if (r == TSS2_RC_SUCCESS) {
-            DBG("Object does not require auth");
+            DBG("Object does not require auth\n");
             tpm2Data->emptyAuth = 1;
         } else if (r == (TPM2_RC_BAD_AUTH | TPM2_RC_S | TPM2_RC_1)) {
-            DBG("Object does require auth");
+            DBG("Object does require auth\n");
             tpm2Data->emptyAuth = 0;
         } else {
             ERR(tpm2tss_tpm2data_readtpm, TPM2TSS_R_GENERAL_FAILURE);
@@ -302,7 +302,6 @@ session_error:
     esys_auxctx_free(&eactx);
     tpm2Data->pub = *outPublic;
     free(outPublic);
-
     *tpm2Datap = tpm2Data;
     return 1;
  error:

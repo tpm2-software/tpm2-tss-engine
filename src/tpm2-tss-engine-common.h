@@ -46,6 +46,7 @@ extern TPM2B_DIGEST ownerauth;
 int init_ecc(ENGINE *e);
 int init_rand(ENGINE *e);
 int init_rsa(ENGINE *e);
+int init_ciphers(ENGINE *e);
 
 typedef void* dl_handle_t;
 
