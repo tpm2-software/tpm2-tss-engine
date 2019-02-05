@@ -1,8 +1,3 @@
-/*
-https://github.com/bigbrett/wsaesengine/blob/master/src/wsaesengine.c
-https://github.com/gost-engine/engine/blob/master/gost_eng.c
-*/
-
 #include <string.h>
 
 #include <openssl/engine.h>
@@ -18,18 +13,10 @@ typedef struct {
     TPM2B_IV iv;
 } TPM2_DATA_CIPHER;
 
-/*
-#define NID_tpm2_aes_128_cbc 1
-#define NID_tpm2_aes_192_ocb 5
-#define NID_tpm2_aes_256_cfb 9
-*/
-
 static int tpm2_cipher_nids[] = {
-    /*
-    NID_tpm2_aes_128_cbc,
-    NID_tpm2_aes_192_ocb,
-    NID_tpm2_aes_256_cfb,
-    */
+    NID_aes_128_cbc,
+    NID_aes_192_ocb,
+    NID_aes_256_cfb1,
     NID_aes_256_cbc,
     NID_aes_256_ocb,
     NID_aes_256_cfb1,
@@ -43,7 +30,7 @@ tpm2_cipher_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsign
 
     DBG("Init Key\n");
 
-    // Init Struct
+    /* Init Struct */
     tpm2DataCipher = OPENSSL_malloc(sizeof(*tpm2DataCipher));
     if (tpm2DataCipher == NULL) {
         ERR(tpm2_cipher_init_key, ERR_R_MALLOC_FAILURE);
@@ -51,7 +38,7 @@ tpm2_cipher_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsign
     }
     memset(tpm2DataCipher, 0, sizeof(*tpm2DataCipher));
 
-    // Fill TPM2_DATA
+    /* Fill TPM2_DATA */
     if (strncmp((char *)key, "0x81", 4) == 0) {
         uint32_t handle;
         sscanf((char *)key, "0x%x", &handle);
@@ -67,8 +54,8 @@ tpm2_cipher_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsign
         // Use blob context
     }
 
-    // Fill other data : IV, ENC
-    tpm2DataCipher->iv.size = strlen(iv);
+    /* Fill other data : IV, ENC */
+    tpm2DataCipher->iv.size = strlen((char *)iv);
     memcpy(tpm2DataCipher->iv.buffer, iv, tpm2DataCipher->iv.size);
     // Note: Openssl (encrypt:1) != TSS (encrypt:0)
     tpm2DataCipher->enc = !enc;
@@ -98,14 +85,14 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
 
     DBG("Do cipher\n");
 
-    // Get App Data
+    /* Get App Data */
     tpm2DataCipher = EVP_CIPHER_CTX_get_app_data(ctx);
 
-    // Init TPM key
+    /* Init TPM key */
     ret = init_tpm_key(&eactx, &keyHandle, tpm2DataCipher->tpm2Data);
     ERRchktss(tpm2_do_cipher_aes_256_cbc, ret, goto error);
 
-    // Copy in_data : unsigned char* to TPM2B_MAX_BUFFER
+    /* Copy in_data : unsigned char* to TPM2B_MAX_BUFFER */
     in_data = OPENSSL_malloc(sizeof(*in_data));
     if (tpm2DataCipher == NULL) {
         ERR(tpm2_do_cipher_aes_256_cbc, ERR_R_MALLOC_FAILURE);
@@ -114,7 +101,7 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
     memcpy(in_data->buffer, in, inl);
     in_data->size = inl;
 
-    // Get mode value
+    /* Get mode value */
     mode = tpm2DataCipher->tpm2Data->pub.publicArea.parameters.symDetail.sym.mode.sym;
     enc = tpm2DataCipher->enc;
     iv = tpm2DataCipher->iv;
@@ -147,7 +134,7 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
     }
     ERRchktss(tpm2_do_cipher_aes_256_cbc, ret, goto error);
 
-    // Copy out_data : TPM2B_MAX_BUFFER to unsigned char*
+    /* Copy out_data : TPM2B_MAX_BUFFER to unsigned char* */
     memcpy(out, out_data->buffer, out_data->size);
     out[out_data->size] = '\0';
 
@@ -170,7 +157,6 @@ error :
 static int
 tpm2_cipher_cleanup(EVP_CIPHER_CTX *ctx)
 {
-    //cleanup
     DBG("cleanup\n");
 
     return 1;

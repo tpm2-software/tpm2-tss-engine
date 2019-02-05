@@ -95,7 +95,7 @@ bin_PROGRAMS += tpm2tss-genkey
 tpm2tss_genkey_SOURCES = src/tpm2tss-genkey.c
 tpm2tss_genkey_CFLAGS = $(AM_CFLAGS)
 tpm2tss_genkey_LDADD = $(AM_LDADD) libtpm2tss.la
-tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS) -ltss2-tcti-mssim -ltss2-tcti-device
+tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS) -ltss2-tcti-device
 
 ### Tests ###
 TESTS = $(TESTS_SHELL) $(TESTS_UNIT)
