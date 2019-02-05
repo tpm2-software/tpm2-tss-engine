@@ -41,6 +41,8 @@ tpm2_cipher_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsign
 {
     TPM2_DATA_CIPHER *tpm2DataCipher = NULL;
 
+    DBG("Init Key\n");
+
     // Init Struct
     tpm2DataCipher = OPENSSL_malloc(sizeof(*tpm2DataCipher));
     if (tpm2DataCipher == NULL) {
@@ -55,13 +57,23 @@ tpm2_cipher_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsign
         sscanf((char *)key, "0x%x", &handle);
         if (!tpm2tss_tpm2data_readtpm(handle, &(tpm2DataCipher->tpm2Data))) {
             ERR(tpm2_cipher_init_key, TPM2TSS_R_TPM2DATA_READ_FAILED);
-            return 0;
+            goto error;
         }
     }
+    else if (key == NULL) {
+        // Create Key
+
+    } else {
+        // Use blob context
+    }
+
+    // Fill other data : IV, ENC
     tpm2DataCipher->iv.size = strlen(iv);
     memcpy(tpm2DataCipher->iv.buffer, iv, tpm2DataCipher->iv.size);
-    tpm2DataCipher->enc = !enc; // Note: Openssl (encrypt:1) != TSS (encrypt:0)
+    // Note: Openssl (encrypt:1) != TSS (encrypt:0)
+    tpm2DataCipher->enc = !enc;
     EVP_CIPHER_CTX_set_app_data(ctx, tpm2DataCipher);
+
     return 1;
 
 error :
@@ -84,7 +96,7 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
     TPMI_YES_NO enc;
     TPM2B_IV iv;
 
-    DBG("doing cipher\n");
+    DBG("Do cipher\n");
 
     // Get App Data
     tpm2DataCipher = EVP_CIPHER_CTX_get_app_data(ctx);
@@ -107,10 +119,6 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
     enc = tpm2DataCipher->enc;
     iv = tpm2DataCipher->iv;
 
-    printf("size iv   : %d\n", iv.size);
-    printf("size data : %d\n", in_data->size);
-
-
     ret = Esys_EncryptDecrypt2( eactx.ectx,
                                 keyHandle,
                                 ESYS_TR_PASSWORD,
@@ -122,9 +130,40 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
                                 &iv,
                                 &out_data,
                                 &iv_out );
+    if (ret == TPM2_RC_COMMAND_CODE) {
+        DBG("Command Code Not Supported : Esys_EncryptDecrypt2 !\n");
+        DBG("Trying other Command Code  : Esys_EncryptDecrypt ...\n");
+        ret = Esys_EncryptDecrypt( eactx.ectx,
+                                    keyHandle,
+                                    ESYS_TR_PASSWORD,
+                                    ESYS_TR_NONE,
+                                    ESYS_TR_NONE,
+                                    enc,
+                                    mode,
+                                    &iv,
+                                    in_data,
+                                    &out_data,
+                                    &iv_out );
+    }
+    ERRchktss(tpm2_do_cipher_aes_256_cbc, ret, goto error);
 
+    // Copy out_data : TPM2B_MAX_BUFFER to unsigned char*
+    memcpy(out, out_data->buffer, out_data->size);
+    out[out_data->size] = '\0';
+
+    if (keyHandle != ESYS_TR_NONE) {
+        if (tpm2DataCipher->tpm2Data->privatetype == KEY_TYPE_HANDLE) {
+            Esys_TR_Close(eactx.ectx, &keyHandle);
+        } else {
+            Esys_FlushContext(eactx.ectx, keyHandle);
+        }
+    }
+    esys_auxctx_free(&eactx);
     return 1;
-error:
+
+error :
+    if (tpm2DataCipher)
+        OPENSSL_free(tpm2DataCipher);
     return 0;
 }
 
@@ -175,8 +214,8 @@ const EVP_CIPHER *tpm2_aes_256_cbc(void)
 {
     if (_tpm2_aes_256_cbc == NULL &&
         ((_tpm2_aes_256_cbc = EVP_CIPHER_meth_new(NID_aes_256_cbc, 1, 32)) == NULL
-         || !EVP_CIPHER_meth_set_iv_length(_tpm2_aes_256_cbc, 8)
-         || !EVP_CIPHER_meth_set_flags(_tpm2_aes_256_cbc, EVP_CIPH_CBC_MODE)
+         || !EVP_CIPHER_meth_set_iv_length(_tpm2_aes_256_cbc, 16)
+         || !EVP_CIPHER_meth_set_flags(_tpm2_aes_256_cbc, EVP_CIPH_CBC_MODE | EVP_CIPH_ALWAYS_CALL_INIT)
          || !EVP_CIPHER_meth_set_init(_tpm2_aes_256_cbc, tpm2_cipher_init_key)
          || !EVP_CIPHER_meth_set_do_cipher(_tpm2_aes_256_cbc, tpm2_do_cipher_aes_256_cbc)
          || !EVP_CIPHER_meth_set_cleanup(_tpm2_aes_256_cbc, tpm2_cipher_cleanup)
@@ -226,8 +265,6 @@ init_ciphers(ENGINE *e)
         DBG("ENGINE_set_ciphers failed\n");
         return 0;
     }
-    //ENGINE_register_ciphers(e);
-    //EVP_add_cipher(tpm2_aes_256_cbc());
-    //DBG("ENGINE_set_ciphers succeeded\n");
+
     return 1;
 }
