@@ -7,6 +7,8 @@
 #include "tpm2-tss-engine.h"
 #include "tpm2-tss-engine-common.h"
 
+#define HANDLE_SIZE 8
+
 typedef struct {
     TPM2_DATA *tpm2Data;
     TPMI_YES_NO enc;     // Note: Openssl (encrypt:1) != TSS (encrypt:0)
@@ -23,10 +25,21 @@ static int tpm2_cipher_nids[] = {
     0
 };
 
+static int convert_array_hex_to_char(const unsigned char *in, unsigned char *out, size_t size)
+{
+    for(size_t i = 0; i < size; i++)
+    {
+        sprintf((char *)out + 2*i, "%02x", in[i]);
+    }
+
+    return 0;
+}
+
 static int
 tpm2_cipher_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsigned char *iv, int enc)
 {
     TPM2_DATA_CIPHER *tpm2DataCipher = NULL;
+    uint32_t keyHandle = 0;
 
     DBG("Init Key\n");
 
@@ -38,26 +51,40 @@ tpm2_cipher_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, const unsign
     }
     memset(tpm2DataCipher, 0, sizeof(*tpm2DataCipher));
 
-    /* Fill TPM2_DATA */
-    if (strncmp((char *)key, "0x81", 4) == 0) {
-        uint32_t handle;
-        sscanf((char *)key, "0x%x", &handle);
-        if (!tpm2tss_tpm2data_readtpm(handle, &(tpm2DataCipher->tpm2Data))) {
+    /* Populate TPM2_DATA depending of key value */
+    if (key == NULL) {
+        // Create Key or Use an empty Key
+
+        return 1;
+    } else if (strncmp((char *)key, "0x81", 4) == 0) {
+        // Read persistent key, use for openssl API : EVP_EncryptInit_ex()
+
+        sscanf((char *)key, "0x%x", &keyHandle);
+        if (!tpm2tss_tpm2data_readtpm(keyHandle, &(tpm2DataCipher->tpm2Data))) {
             ERR(tpm2_cipher_init_key, TPM2TSS_R_TPM2DATA_READ_FAILED);
             goto error;
         }
-    }
-    else if (key == NULL) {
-        // Create Key
+    } else if ((key[0] == 0x81) && (key[HANDLE_SIZE/2 + 1] == 0)) {
+        // Read persistent key, use for openssl app : openssl enc
 
+        unsigned char tmp[HANDLE_SIZE];
+        convert_array_hex_to_char(key, tmp, HANDLE_SIZE/2);
+        sscanf((char *)tmp, "%x", &keyHandle);
+        if (!tpm2tss_tpm2data_readtpm(keyHandle, &(tpm2DataCipher->tpm2Data))) {
+            ERR(tpm2_cipher_init_key, TPM2TSS_R_TPM2DATA_READ_FAILED);
+            goto error;
+        }
     } else {
         // Use blob context
+
+        return 1;
     }
+
+    printf("key  : %x %d\n", keyHandle, keyHandle);
 
     /* Fill other data : IV, ENC */
     tpm2DataCipher->iv.size = strlen((char *)iv);
     memcpy(tpm2DataCipher->iv.buffer, iv, tpm2DataCipher->iv.size);
-    // Note: Openssl (encrypt:1) != TSS (encrypt:0)
     tpm2DataCipher->enc = !enc;
     EVP_CIPHER_CTX_set_app_data(ctx, tpm2DataCipher);
 
@@ -79,21 +106,23 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
     TPM2B_MAX_BUFFER *out_data;
     TPM2B_MAX_BUFFER *in_data;
     TPM2B_IV *iv_out;
+    TPM2B_IV iv_in;
     TPMI_ALG_SYM_MODE mode;
     TPMI_YES_NO enc;
-    TPM2B_IV iv;
 
     DBG("Do cipher\n");
 
     /* Get App Data */
     tpm2DataCipher = EVP_CIPHER_CTX_get_app_data(ctx);
+    if (tpm2DataCipher == NULL)
+        return 1;
 
     /* Init TPM key */
     ret = init_tpm_key(&eactx, &keyHandle, tpm2DataCipher->tpm2Data);
     ERRchktss(tpm2_do_cipher_aes_256_cbc, ret, goto error);
 
     /* Copy in_data : unsigned char* to TPM2B_MAX_BUFFER */
-    in_data = OPENSSL_malloc(sizeof(*in_data));
+    in_data = OPENSSL_malloc(sizeof(TPM2B_MAX_BUFFER));
     if (tpm2DataCipher == NULL) {
         ERR(tpm2_do_cipher_aes_256_cbc, ERR_R_MALLOC_FAILURE);
         goto error;
@@ -104,8 +133,15 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
     /* Get mode value */
     mode = tpm2DataCipher->tpm2Data->pub.publicArea.parameters.symDetail.sym.mode.sym;
     enc = tpm2DataCipher->enc;
-    iv = tpm2DataCipher->iv;
+    iv_in = tpm2DataCipher->iv;
 
+    printf("data : %s", in_data->buffer);
+    printf("mode : 0x%x\n", mode);
+    printf("enc  : %d\n", enc);
+    printf("iv   : %d\n", iv_in.size);
+    printf("key  : 0x%x %d\n", keyHandle);
+
+    /* Trying to encrypt */
     ret = Esys_EncryptDecrypt2( eactx.ectx,
                                 keyHandle,
                                 ESYS_TR_PASSWORD,
@@ -114,23 +150,26 @@ tpm2_do_cipher_aes_256_cbc(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsign
                                 in_data,
                                 enc,
                                 mode,
-                                &iv,
+                                &iv_in,
                                 &out_data,
                                 &iv_out );
     if (ret == TPM2_RC_COMMAND_CODE) {
-        DBG("Command Code Not Supported : Esys_EncryptDecrypt2 !\n");
-        DBG("Trying other Command Code  : Esys_EncryptDecrypt ...\n");
+        DBG("Esys_EncryptDecrypt2 : FAILED\n");
         ret = Esys_EncryptDecrypt( eactx.ectx,
-                                    keyHandle,
-                                    ESYS_TR_PASSWORD,
-                                    ESYS_TR_NONE,
-                                    ESYS_TR_NONE,
-                                    enc,
-                                    mode,
-                                    &iv,
-                                    in_data,
-                                    &out_data,
-                                    &iv_out );
+                                   keyHandle,
+                                   ESYS_TR_PASSWORD,
+                                   ESYS_TR_NONE,
+                                   ESYS_TR_NONE,
+                                   enc,
+                                   mode,
+                                   &iv_in,
+                                   in_data,
+                                   &out_data,
+                                   &iv_out );
+        if(!ret)
+            DBG("Esys_EncryptDecrypt  : SUCCESS\n");
+        else
+            DBG("Esys_EncryptDecrypt  : FAILED\n");
     }
     ERRchktss(tpm2_do_cipher_aes_256_cbc, ret, goto error);
 
@@ -180,7 +219,7 @@ tpm2_get_asn1_params(EVP_CIPHER_CTX *ctx, ASN1_TYPE *type)
 /*
 static const EVP_CIPHER tpm_aes256_cbc =
 {
-    NID_aes_256_cbc,                                               // int nid                   // EVP_CIPHER_meth_new()
+    NID_aes_256_cbc,                                              // int nid                   // EVP_CIPHER_meth_new()
     1,                                                            // int block_size;
     32,                                                           // int key_len;
     8,                                                            // int iv_len;               // EVP_CIPHER_meth_set_iv_length()
