@@ -302,6 +302,7 @@ session_error:
     esys_auxctx_free(&eactx);
     tpm2Data->pub = *outPublic;
     free(outPublic);
+
     *tpm2Datap = tpm2Data;
     return 1;
  error:

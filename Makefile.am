@@ -80,7 +80,7 @@ install-exec-local:
 # Due to confusions with OpenSSL Naming conventions for engines regarding the
 # lib* prefix, we will create a symlink for the engine on install
 # see https://github.com/tpm2-software/tpm2-tss-engine/issues/6#issuecomment-422489744
-# see https://github.com/openssl/openssl/commit/9ee0ed3de66678a15db126d10b3e4226e835b8f5
+# see https://github.com/openssl/openssl/commit/9ee0ed3de66678a15db126d10b3e4226e835b8f5 
 install-exec-hook:
 	(cd $(DESTDIR)$(openssl_enginedir) && \
          $(LN_S) -f libtpm2tss.so tpm2tss.so)
@@ -95,7 +95,7 @@ bin_PROGRAMS += tpm2tss-genkey
 tpm2tss_genkey_SOURCES = src/tpm2tss-genkey.c
 tpm2tss_genkey_CFLAGS = $(AM_CFLAGS)
 tpm2tss_genkey_LDADD = $(AM_LDADD) libtpm2tss.la
-tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS) -ltss2-tcti-device
+tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS) -ltss2-tcti-mssim -ltss2-tcti-device
 
 ### Tests ###
 TESTS = $(TESTS_SHELL) $(TESTS_UNIT)
