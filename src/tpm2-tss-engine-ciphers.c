@@ -47,12 +47,12 @@ typedef struct {
 } TPM2_DATA_CIPHER;
 
 static int tpm2_cipher_nids[] = {
-    //NID_aes_128_cbc,
-    //NID_aes_192_ocb,
-    //NID_aes_256_cfb1,
+    NID_aes_128_cbc,
+    NID_aes_192_ofb128,
+    NID_aes_256_cfb1,
     NID_aes_256_cbc,
-    //NID_aes_256_ocb,
-    //NID_aes_256_cfb1,
+    NID_aes_256_ofb128,
+    NID_aes_256_cfb1,
     0
 };
 
@@ -123,6 +123,8 @@ static TPMI_ALG_SYM_MODE tpm2_get_cipher_mode(EVP_CIPHER_CTX *ctx, TPM2_DATA_CIP
             mode_tpm2 = tpm2DataCipher->tpm2Data->pub.publicArea.parameters.symDetail.sym.mode.sym;
             break;
     }
+    if (mode_tpm2 == TPM2_ALG_NULL)
+        mode_tpm2 = TPM2_ALG_CFB;
 
     return mode_tpm2;
 }
@@ -208,14 +210,16 @@ tpm2_do_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsigned char *in,
 
     /* Get mode value */
     mode = tpm2DataCipher->tpm2Data->pub.publicArea.parameters.symDetail.sym.mode.sym;
-            //tpm2_get_cipher_mode(ctx, tpm2DataCipher);
     enc = tpm2DataCipher->enc;
     iv_in = tpm2DataCipher->iv;
 
+    DBG("\n");
     DBG("algo : %#x\n", tpm2DataCipher->tpm2Data->pub.publicArea.parameters.symDetail.sym.algorithm);
     DBG("mode : %#x\n", mode);
     DBG("size : %d\n", tpm2DataCipher->tpm2Data->pub.publicArea.parameters.symDetail.sym.keyBits.sym);
     DBG("enc  : %d\n", enc);
+    DBG("iv   : %d\n", iv_in.size);
+    DBG("\n");
 
     /* Trying to encrypt */
     ret = Esys_EncryptDecrypt2( eactx.ectx,
@@ -242,16 +246,18 @@ tpm2_do_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsigned char *in,
                                    in_data,
                                    &out_data,
                                    &iv_out );
-        if(!ret)
+        if(ret == TPM2_RC_SUCCESS)
             DBG("Esys_EncryptDecrypt  : SUCCESS\n");
         else
-            DBG("Esys_EncryptDecrypt  : FAILED\n");
+            DBG("Esys_EncryptDecrypt  : FAILED\n", ret);
     }
     ERRchktss(tpm2_do_cipher, ret, goto error);
 
     /* Copy out_data : TPM2B_MAX_BUFFER to unsigned char* */
     memcpy(out, out_data->buffer, out_data->size);
     out[out_data->size] = '\0';
+    printf("IN (%d)  : %s\n", in_data->size, in_data->buffer);
+    printf("OUT (%d) : %s\n", out_data->size, out);
 
     /* Close TPM session */
     if (keyHandle != ESYS_TR_NONE) {
@@ -266,6 +272,16 @@ tpm2_do_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsigned char *in,
     return 1;
 
 error :
+    /* Close TPM session */
+    if (keyHandle != ESYS_TR_NONE) {
+        if (tpm2DataCipher->tpm2Data->privatetype == KEY_TYPE_HANDLE) {
+            Esys_TR_Close(eactx.ectx, &keyHandle);
+        } else {
+            Esys_FlushContext(eactx.ectx, keyHandle);
+        }
+    }
+    esys_auxctx_free(&eactx);
+
     if (tpm2DataCipher)
         OPENSSL_free(tpm2DataCipher);
     return 0;
@@ -291,8 +307,8 @@ const EVP_CIPHER *tpm2_aes_256_cbc(void)
 {
     if (_tpm2_aes_256_cbc == NULL &&
         ((_tpm2_aes_256_cbc = EVP_CIPHER_meth_new(NID_aes_256_cbc, TPM2_MAX_SYM_BLOCK_SIZE, TPM2_MAX_SYM_KEY_BYTES)) == NULL
-         || !EVP_CIPHER_meth_set_iv_length(_tpm2_aes_256_cbc, 16)
-         || !EVP_CIPHER_meth_set_flags(_tpm2_aes_256_cbc, EVP_CIPH_CBC_MODE) // | EVP_CIPH_ALWAYS_CALL_INIT)
+         || !EVP_CIPHER_meth_set_iv_length(_tpm2_aes_256_cbc, TPM2_MAX_SYM_BLOCK_SIZE)
+         || !EVP_CIPHER_meth_set_flags(_tpm2_aes_256_cbc, EVP_CIPH_CBC_MODE)
          || !EVP_CIPHER_meth_set_init(_tpm2_aes_256_cbc, tpm2_cipher_init_key)
          || !EVP_CIPHER_meth_set_do_cipher(_tpm2_aes_256_cbc, tpm2_do_cipher)
          || !EVP_CIPHER_meth_set_cleanup(_tpm2_aes_256_cbc, tpm2_cipher_cleanup)
@@ -318,21 +334,24 @@ tpm2_ciphers_selector(ENGINE *e, const EVP_CIPHER **cipher, const int **nids, in
         return sizeof(tpm2_cipher_nids) / sizeof(tpm2_cipher_nids[0]) - 1;
     }
 
-    switch (nid) {
+   switch (nid) {
     case NID_aes_256_cbc:
         *cipher = tpm2_aes_256_cbc();
         break;
+    /*
     case NID_aes_256_ocb:
-        //*cipher = tpm2_aes_256_ocb();
+        *cipher = tpm2_aes_256_ocb();
         break;
     case NID_aes_256_cfb1:
-        //*cipher = tpm2_aes_256_cfb();
+        *cipher = tpm2_aes_256_cfb();
         break;
+    */
     default:
         *cipher = NULL;
         ret = 0;
         break;
     }
+
     return ret;
 }
 
