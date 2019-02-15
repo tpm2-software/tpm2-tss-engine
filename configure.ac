@@ -119,7 +119,7 @@ AC_PATH_PROG([EXPECT], [expect])
 AS_IF([test -z "$EXPECT"],
     [AC_MSG_WARN([Required executable expect not found, some tests might fail])])
 
-AC_ARG_WITH([enginesdir],
+AC_ARG_WITH([enginesdir], 
             [AS_HELP_STRING([--with-enginesdir],
                             [Set the OpenSSL engine directory (default: use pkg-config)])],
             [],
