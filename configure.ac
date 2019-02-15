@@ -56,7 +56,7 @@ AC_CANONICAL_SYSTEM
 
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Wno-portability])
 #Backward compatible setting of "silent-rules"
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])]) 
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AM_MAINTAINER_MODE([enable])
 
 AC_PROG_CC
@@ -87,7 +87,7 @@ AX_ADD_COMPILER_FLAG([-std=c99])
 AX_ADD_COMPILER_FLAG([-Wall])
 AX_ADD_COMPILER_FLAG([-Wextra])
 AX_ADD_COMPILER_FLAG([-Wformat-security])
-#AX_ADD_COMPILER_FLAG([-Werror])
+AX_ADD_COMPILER_FLAG([-Werror])
 AX_ADD_COMPILER_FLAG([-fstack-protector-all])
 AX_ADD_COMPILER_FLAG([-fpic])
 AX_ADD_COMPILER_FLAG([-fPIC])
@@ -119,7 +119,7 @@ AC_PATH_PROG([EXPECT], [expect])
 AS_IF([test -z "$EXPECT"],
     [AC_MSG_WARN([Required executable expect not found, some tests might fail])])
 
-AC_ARG_WITH([enginesdir], 
+AC_ARG_WITH([enginesdir],
             [AS_HELP_STRING([--with-enginesdir],
                             [Set the OpenSSL engine directory (default: use pkg-config)])],
             [],
@@ -154,4 +154,3 @@ $PACKAGE_NAME $VERSION
     enginesdir:     $with_enginesdir
     completionsdir: $with_completionsdir
 ])
-    
