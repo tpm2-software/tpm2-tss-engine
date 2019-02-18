@@ -11,6 +11,7 @@ env:
   - OPENSSL_BRANCH=OpenSSL_1_0_2-stable
   - OPENSSL_BRANCH=OpenSSL_1_1_0-stable
   global:
+  - TPM2TOOLS_TCTI=mssim
   - PATH="${PWD}/installdir/usr/local/bin:${PATH}"
   - PKG_CONFIG_PATH="${PWD}/installdir/usr/local/lib/pkgconfig:/usr/lib/pkgconfig"
   - LD_LIBRARY_PATH="${PWD}/installdir/usr/local/lib:/usr/lib"

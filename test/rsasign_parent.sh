@@ -13,14 +13,14 @@ echo -n "abcde12345abcde12345">${DIR}/mydata.txt
 echo "Generating primary key"
 PARENT_CTX=${DIR}/primary_owner_key.ctx
 
-tpm2_startup -T mssim -c || true
+tpm2_startup -c || true
 
-tpm2_createprimary -T mssim -a o -g sha256 -G rsa -o ${PARENT_CTX}
-tpm2_flushcontext -T mssim -t
+tpm2_createprimary -a o -g sha256 -G rsa -o ${PARENT_CTX}
+tpm2_flushcontext -t
 
 # Load primary key to persistent handle
-HANDLE=$(tpm2_evictcontrol -T mssim -a o -c ${PARENT_CTX} | cut -d ' ' -f 2)
-tpm2_flushcontext -T mssim -t
+HANDLE=$(tpm2_evictcontrol -a o -c ${PARENT_CTX} | cut -d ' ' -f 2)
+tpm2_flushcontext -t
 
 # Generating a key underneath the persistent parent
 tpm2tss-genkey -a rsa -s 2048 -p abc -P ${HANDLE} ${DIR}/mykey
@@ -31,7 +31,7 @@ cat ${DIR}/mykey.pub
 echo "abc" | openssl pkeyutl -engine tpm2tss -keyform engine -inkey ${DIR}/mykey -sign -in ${DIR}/mydata.txt -out ${DIR}/mysig -passin stdin
 
 # Release persistent HANDLE
-tpm2_evictcontrol -T mssim -a o -c ${HANDLE} -p ${HANDLE}
+tpm2_evictcontrol -a o -c ${HANDLE} -p ${HANDLE}
 
 cat ${DIR}/mysig
 

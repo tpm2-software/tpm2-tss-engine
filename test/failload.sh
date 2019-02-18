@@ -11,7 +11,7 @@ DIR=$(mktemp -d)
 echo -n "abcde12345abcde12345">${DIR}/mykey
 chmod ugo-rwx ${DIR}/mykey
 
-tpm2_startup -T mssim -c || true
+tpm2_startup -c || true
 
 R="$(openssl rsa -engine tpm2tss -inform engine -in ${DIR}/mykey -pubout -outform pem -out ${DIR}/mykey.pub 2>&1 || true)"
 echo $R
