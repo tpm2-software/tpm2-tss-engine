@@ -275,7 +275,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
 
         r = Esys_ReadPublic(eactx.ectx, keyHandle,
                             session, ESYS_TR_NONE, ESYS_TR_NONE,
-                            &outPublic, NULL, NULL);
+                            NULL, NULL, NULL);
 
         /* tpm2-tss < 2.2 has some bugs. (1) it may miscalculate the auth from
            above leading to a password query in case of empty auth and (2) it
