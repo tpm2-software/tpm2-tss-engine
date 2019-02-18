@@ -101,6 +101,10 @@ void ERR_error(int function, int reason, const char *file, int line);
 #define TPM2TSS_F_tcti_set_opts         154
 #define TPM2TSS_F_tcti_get_ctx          155
 #define TPM2TSS_F_tcti_free_ctx         156
+/* tpm2-tss-engine-ciphers.c */
+#define TPM2TSS_F_tpm2_cipher_init_key  157
+#define TPM2TSS_F_tpm2_do_cipher        158
+#define TPM2TSS_F_tpm2tss_sym_genkey    159
 
 /* Reason codes */
 #define TPM2TSS_R_TPM2DATA_READ_FAILED  100

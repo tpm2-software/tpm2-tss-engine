@@ -54,7 +54,7 @@ AC_CANONICAL_SYSTEM
 
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Wno-portability])
 #Backward compatible setting of "silent-rules"
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])]) 
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AM_MAINTAINER_MODE([enable])
 
 AC_PROG_CC
@@ -77,6 +77,12 @@ AC_ARG_ENABLE([tctienvvar],
                     [Disable setting the TCTI option from an environment variable])],,
     [enable_tctienvvar=yes])
 AS_IF([test "x$enable_tctienvvar" = xyes], [AC_DEFINE([ENABLE_TCTIENVVAR], [1])])
+
+AC_ARG_ENABLE([symmetric],
+    [AS_HELP_STRING([--enable-symmetric],
+                    [Enable symmetric encryption])],,
+    [enable_symmetric=no])
+AS_IF([test "x$enable_symmetric" = xyes], [AC_DEFINE([ENABLE_SYMMETRIC], [1])])
 
 AC_CONFIG_FILES([Makefile])
 
@@ -127,7 +133,7 @@ AC_PATH_PROG([EXPECT], [expect])
 AS_IF([test -z "$EXPECT"],
     [AC_MSG_WARN([Required executable expect not found, some tests might fail])])
 
-AC_ARG_WITH([enginesdir], 
+AC_ARG_WITH([enginesdir],
             [AS_HELP_STRING([--with-enginesdir],
                             [Set the OpenSSL engine directory (default: use pkg-config)])],
             [],
@@ -154,7 +160,7 @@ AC_ARG_ENABLE([unit],
             [AS_HELP_STRING([--enable-unit],
                             [build cmocka unit tests])],,
             [enable_unit=no])
-AS_IF([test "x$enable_unit" != "xno" ], 
+AS_IF([test "x$enable_unit" != "xno" ],
       [PKG_CHECK_MODULES([CMOCKA], [cmocka >= 1.0])])
 AM_CONDITIONAL([UNIT], [test "x$enable_unit" != xno])
 
@@ -188,4 +194,3 @@ $PACKAGE_NAME $VERSION
     enginesdir:     $with_enginesdir
     completionsdir: $with_completionsdir
 ])
-    

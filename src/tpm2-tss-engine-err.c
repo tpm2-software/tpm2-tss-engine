@@ -76,6 +76,10 @@ static ERR_STRING_DATA TPM2TSS_f[] = {
     ERR_F(tcti_set_opts),
     ERR_F(tcti_get_ctx),
     ERR_F(tcti_free_ctx),
+    /* tpm2-tss-engine-ciphers.c */
+    ERR_F(tpm2_cipher_init_key),
+    ERR_F(tpm2_do_cipher),
+    ERR_F(tpm2tss_sym_genkey),
     {0, NULL}
 };
 
