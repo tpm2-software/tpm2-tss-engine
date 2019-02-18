@@ -23,11 +23,9 @@ addons:
     - autoconf-archive
     - automake
     - build-essential
-    - libgcrypt20-dev
     - realpath
     - lcov
     - libssl-dev
-    - uthash-dev
     - pandoc
     - expect
 
@@ -83,11 +81,12 @@ install:
   - tar xJf autoconf-archive-2017.09.28.tar.xz
   - cp autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
 # TPM2-TSS
-  - git clone --depth=1 -b 2.1.0 https://github.com/tpm2-software/tpm2-tss.git
+  - git clone --depth=1 -b 2.2.0 https://github.com/tpm2-software/tpm2-tss.git
   - pushd tpm2-tss
   - cp ../autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
+  - cp ../autoconf-archive-2017.09.28/m4/ax_prog_doxygen.m4 m4/
   - ./bootstrap
-  - ./configure CFLAGS=-I${PWD}/../installdir/usr/local/include LDFLAGS=-L${PWD}/../installdir/usr/local/lib
+  - ./configure CFLAGS=-I${PWD}/../installdir/usr/local/include LDFLAGS=-L${PWD}/../installdir/usr/local/lib --disable-doxygen-doc
   - make -j$(nproc)
   - make install DESTDIR=${PWD}/../installdir
   - rm ${PWD}/../installdir/usr/local/lib/*.la
