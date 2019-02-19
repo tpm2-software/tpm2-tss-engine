@@ -8,8 +8,9 @@ dist: trusty
 
 env:
   matrix:
-  - OPENSSL_BRANCH=OpenSSL_1_0_2-stable
-  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable
+  - OPENSSL_BRANCH=OpenSSL_1_0_2-stable TPM2TSS_BRANCH=2.2.0
+  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.1.0
+  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.2.0
   global:
   - TPM2TOOLS_TCTI=mssim
   - PATH="${PWD}/installdir/usr/local/bin:${PATH}"
@@ -30,6 +31,7 @@ addons:
     - uthash-dev
     - pandoc
     - expect
+    - doxygen
 
 install:
   - git clean -xdf
@@ -83,11 +85,12 @@ install:
   - tar xJf autoconf-archive-2017.09.28.tar.xz
   - cp autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
 # TPM2-TSS
-  - git clone --depth=1 -b 2.1.0 https://github.com/tpm2-software/tpm2-tss.git
+  - git clone --depth=1 -b ${TPM2TSS_BRANCH} https://github.com/tpm2-software/tpm2-tss.git
   - pushd tpm2-tss
   - cp ../autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
+  - cp ../autoconf-archive-2017.09.28/m4/ax_prog_doxygen.m4 m4/
   - ./bootstrap
-  - ./configure CFLAGS=-I${PWD}/../installdir/usr/local/include LDFLAGS=-L${PWD}/../installdir/usr/local/lib
+  - ./configure CFLAGS=-I${PWD}/../installdir/usr/local/include LDFLAGS=-L${PWD}/../installdir/usr/local/lib --disable-doxygen-doc
   - make -j$(nproc)
   - make install DESTDIR=${PWD}/../installdir
   - rm ${PWD}/../installdir/usr/local/lib/*.la

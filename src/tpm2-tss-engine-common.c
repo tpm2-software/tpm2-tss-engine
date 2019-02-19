@@ -34,6 +34,7 @@
 
 #include <openssl/engine.h>
 #include <openssl/pem.h>
+#include <openssl/rand.h>
 
 #include "tpm2-tss-engine.h"
 #include "tpm2-tss-engine-common.h"
@@ -251,6 +252,16 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
                             .mode = {.aes = TPM2_ALG_CFB}
         };
 
+        /* Esys_StartAuthSession() and session handling use OpenSSL for random
+           bytes and thus might end up inside this engine again. This becomes
+           a problem if we have no resource manager, i.e. the tpm simulator. */
+        const RAND_METHOD *rand_save = RAND_get_rand_method();
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+        RAND_set_rand_method(RAND_SSLeay());
+#else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+        RAND_set_rand_method(RAND_OpenSSL());
+#endif
+
         /* We do the check by starting a bound audit session and executing a
            very cheap command. */
         r = Esys_StartAuthSession(eactx.ectx, ESYS_TR_NONE, keyHandle,
@@ -276,6 +287,8 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         r = Esys_ReadPublic(eactx.ectx, keyHandle,
                             session, ESYS_TR_NONE, ESYS_TR_NONE,
                             NULL, NULL, NULL);
+
+        RAND_set_rand_method(rand_save);
 
         /* tpm2-tss < 2.2 has some bugs. (1) it may miscalculate the auth from
            above leading to a password query in case of empty auth and (2) it
