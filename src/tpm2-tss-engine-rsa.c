@@ -120,7 +120,7 @@ rsa_priv_enc(int flen, const unsigned char *from, unsigned char *to, RSA *rsa,
 
     int ret = 0;
     TSS2_RC r = TSS2_RC_SUCCESS;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
+    ESYS_AUXCONTEXT eactx = { NULL, NULL };
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPM2B_DATA label = { .size = 0 };
     TPM2B_PUBLIC_KEY_RSA *sig = NULL;
@@ -219,7 +219,7 @@ rsa_priv_dec(int flen, const unsigned char *from, unsigned char *to, RSA * rsa,
     DBGBUF(from, flen);
 
     TSS2_RC r;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
+    ESYS_AUXCONTEXT eactx = { NULL, NULL };
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPM2B_DATA label = { .size = 0 };
     TPM2B_PUBLIC_KEY_RSA *message = NULL;
@@ -485,7 +485,7 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
     DBG("Generating RSA key for %i bits keysize.\n", bits);
 
     TSS2_RC r = TSS2_RC_SUCCESS;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
+    ESYS_AUXCONTEXT eactx = { NULL, NULL };
     ESYS_TR parent = ESYS_TR_NONE;
     TPM2B_PUBLIC *keyPublic = NULL;
     TPM2B_PRIVATE *keyPrivate = NULL;

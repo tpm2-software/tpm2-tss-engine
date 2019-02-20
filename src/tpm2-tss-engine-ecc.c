@@ -132,7 +132,7 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
     DBGBUF(dgst, dgst_len);
 
     TSS2_RC r;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
+    ESYS_AUXCONTEXT eactx = { NULL, NULL };
     ESYS_TR keyHandle = ESYS_TR_NONE;
     TPMT_SIGNATURE *sig = NULL;
 
@@ -429,7 +429,7 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     DBG("GenKey for ecdsa.\n");
 
     TSS2_RC r;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
+    ESYS_AUXCONTEXT eactx = { NULL, NULL };
     ESYS_TR parent = ESYS_TR_NONE;
     TPM2B_PUBLIC *keyPublic = NULL;
     TPM2B_PRIVATE *keyPrivate = NULL;
