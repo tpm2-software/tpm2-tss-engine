@@ -37,7 +37,8 @@ AM_CFLAGS       = $(INCLUDE_DIRS) $(EXTRA_CFLAGS) $(TSS2_ESYS_CFLAGS) \
 AM_LDFLAGS      = $(EXTRA_LDFLAGS) $(CODE_COVERAGE_LIBS)
 AM_LDADD        = $(TSS2_ESYS_LIBS) $(CRYPTO_LIBS) -ldl
 
-AM_DISTCHECK_CONFIGURE_FLAGS=--with-enginesdir= --with-completionsdir=
+AM_DISTCHECK_CONFIGURE_FLAGS = --with-enginesdir= --with-completionsdir= \
+                               --enable-unit
 
 # Initialize empty variables to be extended throughout
 lib_LTLIBRARIES =
@@ -103,9 +104,15 @@ tpm2tss_genkey_LDADD = $(AM_LDADD) libtpm2tss.la
 tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS) -ltss2-tcti-mssim -ltss2-tcti-device
 
 ### Tests ###
-TESTS = $(TESTS_SHELL) $(TESTS_UNIT)
-#TESTS = $(TESTS_UNIT)
+TESTS = $(TESTS_INTEGRATION) $(TESTS_UNIT)
 
+check_PROGRAMS = $(TESTS_UNIT)
+TESTS_UNIT =
+TESTS_INTEGRATION =
+
+if INTEGRATION
+TESTS_INTEGRATION += $(TESTS_SHELL)
+endif #INTEGRATION
 TESTS_SHELL = test/ecdsa.sh \
               test/ecdsa-emptyauth.sh \
               test/rand.sh \
@@ -119,16 +126,14 @@ TESTS_SHELL = test/ecdsa.sh \
               test/sserver.sh
 EXTRA_DIST += $(TESTS_SHELL)
 
-check_PROGRAMS = $(TESTS_UNIT)
-
-TESTS_UNIT = test/error_tpm2-tss-engine-common
-
+if UNIT
+TESTS_UNIT += test/error_tpm2-tss-engine-common
 test_error_tpm2_tss_engine_common_CFLAGS =  $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_error_tpm2_tss_engine_common_LDADD =   $(AM_LDADD) $(CMOCKA_LIBS)
 test_error_tpm2_tss_engine_common_LDFLAGS = $(AM_LDFLAGS) -Wl,--wrap=Esys_Initialize
 test_error_tpm2_tss_engine_common_SOURCES = test/error_tpm2-tss-engine-common.c \
                                             $(libtpm2tss_la_SOURCES)
-
+endif #UNIT
 
 # Adding user and developer information
 EXTRA_DIST += \

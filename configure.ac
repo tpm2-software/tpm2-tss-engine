@@ -146,9 +146,21 @@ AS_IF([test -z "$with_completionsdir"],
     [with_completionsdir=$datarootdir/bash-completion/completions])
 AC_SUBST(completionsdir, "$with_completionsdir")
 
-m4_define([cmocka_min_version], [1.0])
-m4_define([cmocka_err], [Unit test enabled, but cmocka missing or version requirements not met. cmocka version must be >= cmocka_min_version])
-PKG_CHECK_MODULES([CMOCKA], [cmocka >= 1.0])
+AC_ARG_ENABLE([unit],
+            [AS_HELP_STRING([--enable-unit],
+                            [build cmocka unit tests (default is no)])],
+            [enable_unit=$enableval],
+            [enable_unit=no])
+AS_IF([test "x$enable_unit" != "xno" ], 
+      [PKG_CHECK_MODULES([CMOCKA], [cmocka >= 1.0])])
+AM_CONDITIONAL([UNIT], [test "x$enable_unit" != xno])
+
+AC_ARG_ENABLE([integration],
+            [AS_HELP_STRING([--enable-integration],
+                            [build integration tests against TPM (default is no)])],
+            [enable_integration=$enableval],
+            [enable_integration=no])
+AM_CONDITIONAL([INTEGRATION], [test "x$enable_integration" != xno])
 
 AC_OUTPUT
 
