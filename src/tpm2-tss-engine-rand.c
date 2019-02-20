@@ -50,7 +50,7 @@
 static int
 rand_bytes(unsigned char *buf, int num)
 {
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
+    ESYS_AUXCONTEXT eactx = { NULL, NULL };
     TSS2_RC r;
 
     r = esys_auxctx_init(&eactx);

@@ -206,7 +206,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     TSS2_RC r;
     TPM2_DATA *tpm2Data = NULL;
     ESYS_TR keyHandle = ESYS_TR_NONE;
-    ESYS_AUXCONTEXT eactx = (ESYS_AUXCONTEXT) { 0 };
+    ESYS_AUXCONTEXT eactx = { NULL, NULL };
     TPM2B_PUBLIC *outPublic;
 
     tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
@@ -443,7 +443,8 @@ init_tpm_parent(ESYS_AUXCONTEXT *eactx_p,
 {
     TSS2_RC r;
     *parent = ESYS_TR_NONE;
-    *eactx_p = (ESYS_AUXCONTEXT) { 0 };
+    eactx_p->dlhandle = NULL;
+    eactx_p->ectx = NULL;
 
     DBG("Establishing connection with TPM.\n");
     r = esys_auxctx_init(eactx_p);
@@ -501,7 +502,8 @@ init_tpm_key (ESYS_AUXCONTEXT *eactx_p, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
     TSS2_RC r;
     ESYS_TR parent = ESYS_TR_NONE;
     *keyHandle = ESYS_TR_NONE;
-    *eactx_p = (ESYS_AUXCONTEXT){0};
+    eactx_p->dlhandle = NULL;
+    eactx_p->ectx = NULL;
 
     if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
         DBG("Establishing connection with TPM.\n");
