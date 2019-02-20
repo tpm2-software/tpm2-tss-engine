@@ -124,12 +124,13 @@ script:
     else
       export SCAN_PREFIX="scan-build --status-bugs"
     fi
-  - $SCAN_PREFIX ../configure $CONFIGURE_OPTIONS
+  - $SCAN_PREFIX ../configure $CONFIGURE_OPTIONS --enable-unit --enable-integration
   - $SCAN_PREFIX make -j$(nproc)
   - make -j1 check
-  - cat test-suite.log
+  - cat test-suite.log config.log
+  - ../configure $CONFIGURE_OPTIONS
   - make -j1 distcheck
-  - cat config.log $(find -name test-suit.log) || true
+  - cat config.log
   - popd
 
 after_success:
