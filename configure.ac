@@ -30,11 +30,12 @@
 #;*****************************************************************************;
 AC_PREREQ([2.68])
 
-AC_INIT([openssl-tpm2-engine],
-        [0.0.1],
-        [https://github.com/tpm2-software/tpm2-tss-engine],
+AC_INIT([tpm2-tss-engine],
+        [1.0.0-rc0],
+        [https://github.com/tpm2-software/tpm2-tss-engine/issues],
         [],
         [https://github.com/tpm2-software/tpm2-tss-engine])
+
 dnl Avoid setting CFLAGS to anything by default; we use AC_CFLAGS below for this.
 : ${CFLAGS=""}
 
