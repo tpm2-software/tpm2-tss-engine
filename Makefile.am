@@ -150,20 +150,22 @@ AUTHORS:
 EXTRA_DIST += AUTHORS
 CLEANFILES += AUTHORS
 
-if HAVE_PANDOC
+if HAVE_MAN_PAGES
 ### Man Pages
 man1_MANS = \
-    man/tpm2tss-genkey.1
+    man/man1/tpm2tss-genkey.1
 man3_MANS = \
-    man/tpm2tss_tpm2data_write.3 \
-    man/tpm2tss_rsa_makekey.3 \
-    man/tpm2tss_rsa_genkey.3 \
-    man/tpm2tss_ecc_makekey.3 \
-    man/tpm2tss_ecc_genkey.3 \
-    man/tpm2tss_ecc_getappdata.3 \
-    man/tpm2tss_tpm2data_read.3 \
-    man/tpm2tss_ecc_setappdata.3
+    man/man3/tpm2tss_tpm2data_write.3 \
+    man/man3/tpm2tss_rsa_makekey.3 \
+    man/man3/tpm2tss_rsa_genkey.3 \
+    man/man3/tpm2tss_ecc_makekey.3 \
+    man/man3/tpm2tss_ecc_genkey.3 \
+    man/man3/tpm2tss_ecc_getappdata.3 \
+    man/man3/tpm2tss_tpm2data_read.3 \
+    man/man3/tpm2tss_ecc_setappdata.3
+endif
 
+if HAVE_PANDOC
 # If pandoc is enabled, we want to generate the manpages for the dist tarball
 EXTRA_DIST += \
     $(man1_MANS) \
@@ -177,21 +179,17 @@ dist-hook:
 	@exit 1
 endif
 
-define man_dir
-    mkdir man 2>/dev/null || test -d man
-endef
-
-man/tpm2tss_tpm2data_read.3: man/tpm2tss_tpm2data_write.3
+man/man3/tpm2tss_tpm2data_read.3: man/man3/tpm2tss_tpm2data_write.3
 	$(AM_V_GEN)(rm $@ 2>/dev/null || true) && ln -s tpm2tss_tpm2data_write.3 $@
 
-man/tpm2tss_ecc_setappdata.3: man/tpm2tss_ecc_getappdata.3
+man/man3/tpm2tss_ecc_setappdata.3: man/man3/tpm2tss_ecc_getappdata.3
 	$(AM_V_GEN)(rm $@ 2>/dev/null || true) && ln -s tpm2tss_ecc_getappdata.3 $@
 
-man/%.1: man/%.1.md
-	$(AM_V_GEN)$(call man_dir) && cat $< | $(PANDOC) -s -t man >$@
+man/man1/%.1: man/%.1.md
+	$(AM_V_GEN)mkdir -p man/man1 && cat $< | $(PANDOC) -s -t man >$@
 
-man/%.3: man/%.3.md
-	$(AM_V_GEN)$(call man_dir) && cat $< | $(PANDOC) -s -t man >$@
+man/man3/%.3: man/%.3.md
+	$(AM_V_GEN)mkdir -p man/man3 && cat $< | $(PANDOC) -s -t man >$@
 
 EXTRA_DIST += \
     man/tpm2tss-genkey.1.md \
