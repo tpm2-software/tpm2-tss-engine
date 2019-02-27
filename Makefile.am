@@ -69,7 +69,11 @@ libtpm2tss_la_SOURCES = src/tpm2-tss-engine.c \
                         src/tpm2-tss-engine-err.h \
                         src/tpm2-tss-engine-ecc.c \
                         src/tpm2-tss-engine-rand.c \
-                        src/tpm2-tss-engine-rsa.c
+                        src/tpm2-tss-engine-rsa.c \
+                        src/tpm2-tss-engine-pmeth.c \
+                        src/tpm2-tss-engine-pmeth.h \
+                        src/tpm2-tss-engine-rsa-pmeth.c
+
 libtpm2tss_la_CFLAGS = $(AM_CFLAGS)
 libtpm2tss_la_LIBADD = $(AM_LDADD)
 libtpm2tss_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined -avoid-version \
@@ -120,7 +124,9 @@ TESTS_SHELL = test/ecdsa.sh \
               test/rsasign_persistent.sh \
               test/rsasign_persistent_emptyauth.sh \
               test/sserver.sh \
-              test/sclient.sh
+              test/sclient.sh \
+              test/rsasign_genpkey.sh \
+              test/rsadecrypt_genpkey.sh
 EXTRA_DIST += $(TESTS_SHELL)
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER = $(srcdir)/test/sh_log_compiler.sh

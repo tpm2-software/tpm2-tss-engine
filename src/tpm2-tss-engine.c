@@ -282,6 +282,12 @@ init_engine(ENGINE *e) {
         return rc;
     }
 
+    rc = init_pmeth(e);
+    if (rc != 1) {
+        ERR(init_engine, TPM2TSS_R_SUBINIT_FAILED);
+        return rc;
+    }
+
     initialized = 1;
     return 1;
 }
