@@ -540,7 +540,8 @@ init_tpm_key (ESYS_AUXCONTEXT *eactx_p, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
         parent = ESYS_TR_NONE;
     } else {
         r = -1;
-        ERRchktss(init_tpm_key, r, goto error);
+        ERR(init_tpm_key, TPM2TSS_R_TPM2DATA_READ_FAILED);
+        goto error;
     }
 
     r = Esys_TR_SetAuth(eactx_p->ectx, *keyHandle, &tpm2Data->userauth);
