@@ -23,7 +23,7 @@ components of the version number.
 In the run up to a release the maintainers may create tags to identify progress
 toward the release. In these cases we will append a string to the release number
 to indicate progress using the abbreviation `rc` for 'release candidate'. This
-string will take the form of `_rcX`. We append an incremental digit `X` in case
+string will take the form of `-rcX`. We append an incremental digit `X` in case
 more than one release candidate is necessary to communicate progress as
 development moves forward.
 
