@@ -36,9 +36,6 @@ AC_INIT([tpm2-tss-engine],
         [],
         [https://github.com/tpm2-software/tpm2-tss-engine])
 
-dnl Avoid setting CFLAGS to anything by default; we use AC_CFLAGS below for this.
-: ${CFLAGS=""}
-
 dnl Let's be FHS-conform by default.
 if test "$prefix" = '/usr'; then
     test "$sysconfdir" = '${prefix}/etc' && sysconfdir="/etc"
