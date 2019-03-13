@@ -67,8 +67,7 @@ AC_PROG_LN_S
 
 AC_ARG_ENABLE([debug],
             [AS_HELP_STRING([--enable-debug],
-                            [build with debug output (default is no)])],
-            [enable_debug=$enableval],
+                            [build with debug output])],,
             [enable_debug=no])
 AS_IF([test "x$enable_debug" != "xno"],
       AC_DEFINE_UNQUOTED([DEBUG], [1], ["Debug output enabled"]))
@@ -144,8 +143,7 @@ AC_SUBST(completionsdir, "$with_completionsdir")
 
 AC_ARG_ENABLE([unit],
             [AS_HELP_STRING([--enable-unit],
-                            [build cmocka unit tests (default is no)])],
-            [enable_unit=$enableval],
+                            [build cmocka unit tests])],,
             [enable_unit=no])
 AS_IF([test "x$enable_unit" != "xno" ], 
       [PKG_CHECK_MODULES([CMOCKA], [cmocka >= 1.0])])
@@ -153,8 +151,7 @@ AM_CONDITIONAL([UNIT], [test "x$enable_unit" != xno])
 
 AC_ARG_ENABLE([integration],
             [AS_HELP_STRING([--enable-integration],
-                            [build integration tests against TPM (default is no)])],
-            [enable_integration=$enableval],
+                            [build integration tests against TPM])],,
             [enable_integration=no])
 AM_CONDITIONAL([INTEGRATION], [test "x$enable_integration" != xno])
 
