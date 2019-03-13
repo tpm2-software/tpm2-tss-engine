@@ -75,9 +75,8 @@ AS_IF([test "x$enable_debug" != "xno"],
 
 AC_ARG_ENABLE([tctienvvar],
     [AS_HELP_STRING([--enable-tctienvvar],
-                        [Set the TCTI option from an environment variable])],
-    [AC_DEFINE([ENABLE_TCTIENVVAR], [1])],
-    )
+                        [Set the TCTI option from an environment variable])])
+AS_IF([test "x$enable_tctienvvar" = xyes], [AC_DEFINE([ENABLE_TCTIENVVAR], [1])])
 
 AC_CONFIG_FILES([Makefile])
 
