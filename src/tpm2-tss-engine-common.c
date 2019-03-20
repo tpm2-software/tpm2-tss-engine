@@ -241,7 +241,6 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         goto error;
     }
 
-#ifdef TSS22
     /* If the persistent key has the NODA flag set, we check whether it does
        have an empty authValue. If NODA is not set, then we don't check because
        that would increment the DA lockout counter */
@@ -308,7 +307,6 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     }
 
 session_error:
-#endif /* TSS22 */
 
     Esys_TR_Close(eactx.ectx, &keyHandle);
 

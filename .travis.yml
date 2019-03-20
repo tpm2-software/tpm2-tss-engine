@@ -8,9 +8,8 @@ dist: trusty
 
 env:
   matrix:
-  - OPENSSL_BRANCH=OpenSSL_1_0_2-stable TPM2TSS_BRANCH=2.2.0
-  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.1.0
-  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.2.0
+  - OPENSSL_BRANCH=OpenSSL_1_0_2-stable TPM2TSS_BRANCH=2.2.x
+  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.2.x
   global:
   - TPM2TOOLS_TCTI=mssim
   - PATH="${PWD}/installdir/usr/local/bin:${PATH}"

@@ -111,9 +111,7 @@ AX_ADD_AM_MACRO_STATIC([])
 PKG_PROG_PKG_CONFIG([0.25])
 PKG_CHECK_MODULES([CRYPTO], [libcrypto >= 1.0.2g],
                   [ac_enginesdir=`$PKG_CONFIG --variable=enginesdir libcrypto`])
-PKG_CHECK_MODULES([TSS2_ESYS], [tss2-esys >= 2.2],
-                  [AC_DEFINE(TSS22, [1], ["tpm2tss version >= 2.2"])],
-                  [PKG_CHECK_MODULES([TSS2_ESYS],[tss2-esys])])
+PKG_CHECK_MODULES([TSS2_ESYS], [tss2-esys >= 2.2])
 
 AC_PATH_PROG([PANDOC], [pandoc])
 AS_IF([test -z "$PANDOC"],
