@@ -123,7 +123,8 @@ TESTS_SHELL = test/ecdsa.sh \
               test/rsasign_parent.sh \
               test/rsasign_persistent.sh \
               test/rsasign_persistent_emptyauth.sh \
-              test/sserver.sh
+              test/sserver.sh \
+              test/sclient.sh
 EXTRA_DIST += $(TESTS_SHELL)
 
 if UNIT
