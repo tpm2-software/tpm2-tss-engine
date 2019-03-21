@@ -153,9 +153,8 @@ CLEANFILES += AUTHORS
 
 if HAVE_MAN_PAGES
 ### Man Pages
-man1_MANS = \
-    man/man1/tpm2tss-genkey.1
-man3_MANS = \
+dist_man_MANS = \
+    man/man1/tpm2tss-genkey.1 \
     man/man3/tpm2tss_tpm2data_write.3 \
     man/man3/tpm2tss_rsa_makekey.3 \
     man/man3/tpm2tss_rsa_genkey.3 \
@@ -166,13 +165,7 @@ man3_MANS = \
     man/man3/tpm2tss_ecc_setappdata.3
 endif
 
-if HAVE_PANDOC
-# If pandoc is enabled, we want to generate the manpages for the dist tarball
-EXTRA_DIST += \
-    $(man1_MANS) \
-    $(man3_MANS)
-
-else
+if !HAVE_PANDOC
 # If pandoc is not enabled, we want to complain that you need pandoc for make dist,
 # so hook the target and complain.
 dist-hook:
@@ -202,8 +195,7 @@ EXTRA_DIST += \
     man/tpm2tss_ecc_getappdata.3.md
 
 CLEANFILES += \
-    $(man1_MANS) \
-    $(man3_MANS)
+    $(dist_man_MANS)
 
 ### Bash Completion
 bash_completiondir = $(completionsdir)
