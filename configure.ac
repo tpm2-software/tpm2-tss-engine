@@ -163,6 +163,11 @@ AC_ARG_ENABLE([integration],
             [enable_integration=$enableval],
             [enable_integration=no])
 AM_CONDITIONAL([INTEGRATION], [test "x$enable_integration" != xno])
+AS_IF([test "x$enable_integration" = xyes],
+      [AC_CHECK_PROG([tpm2_startup], [tpm2_startup], [yes])
+       AS_IF([test "x$tpm2_startup" != xyes],
+             [AC_MSG_ERROR([Integration tests require the tpm2_startup executable])])
+      ])
 
 AC_OUTPUT
 
