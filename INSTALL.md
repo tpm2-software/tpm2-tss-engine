@@ -9,8 +9,9 @@
 * C library development libraries and header files
 * pkg-config
 * OpenSSL >= 1.0.2
-* tpm2-tss >= 2.0
-* ronn
+* tpm2-tss >= 2.2.2
+* pandoc
+* expect
 
 ## Ubuntu
 ```
@@ -24,8 +25,9 @@ sudo apt -y install \
   gcc \
   pkg-config \
   libssl-dev \
-  ruby-ronn
-git clone --depth=1 http://www.github.com/tpm2-software/tpm2-tss
+  pandoc \
+  expect
+git clone -b 2.2.x --depth=1 http://www.github.com/tpm2-software/tpm2-tss
 cd tpm2-tss
 ./bootstrap
 ./configure
