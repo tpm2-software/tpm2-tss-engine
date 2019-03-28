@@ -596,3 +596,73 @@ init_tpm_key (ESYS_AUXCONTEXT *eactx_p, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
     esys_auxctx_free(eactx_p);
     return r;
 }
+
+/** Deserialize a tpm key from disk
+ *
+ * Read a tpm key as marshaled TPM2B_PUBLIC and (encrypted) TPM2B_PRIVATE from
+ * disk and convert them into a TPM2_DATA representation
+ * @param filename The filename to read the data from.
+ * @param tpm2Datap The data after read.
+ * @retval 1 on success
+ * @retval 0 on failure
+ */
+//TODO: all the Errors !!!
+int
+tpm2tss_tpm2data_importtpm(const char *filenamepub, const char *filenametpm,
+                           TPM2_HANDLE parent, int emptyAuth,
+                           TPM2_DATA **tpm2Datap)
+{
+    TSS2_RC r;
+    BIO *bio;
+    TPM2_DATA *tpm2data;
+    int filepub_size, filepriv_size;
+
+    uint8_t filepub[sizeof(TPM2B_PUBLIC)];
+    uint8_t filepriv[sizeof(TPM2B_PRIVATE)];
+
+    if ((bio = BIO_new_file(filenamepub, "r")) == NULL) {
+        ERR(tpm2tss_tpm2data_read, TPM2TSS_R_FILE_READ);
+        return 0;
+    }
+    filepub_size = BIO_read(bio, &filepub[0], sizeof(filepub));
+    BIO_free(bio);
+    if (filepub_size < 0) {
+        ERR(tpm2tss_tpm2data_read, TPM2TSS_R_FILE_READ);
+        return 0;
+    }
+
+    if ((bio = BIO_new_file(filenametpm, "r")) == NULL) {
+        ERR(tpm2tss_tpm2data_read, TPM2TSS_R_FILE_READ);
+        return 0;
+    }
+    filepriv_size = BIO_read(bio, &filepriv[0], sizeof(filepriv));
+    BIO_free(bio);
+    if (filepriv_size < 0) {
+        ERR(tpm2tss_tpm2data_read, TPM2TSS_R_FILE_READ);
+        return 0;
+    }
+
+    tpm2data = OPENSSL_malloc(sizeof(TPM2_DATA));
+        if (!tpm2data)
+            return 0;
+
+    memset(tpm2data, 0, sizeof(*tpm2data));
+    tpm2data->privatetype = KEY_TYPE_BLOB;
+    tpm2data->parent = parent;
+    tpm2data->emptyAuth = emptyAuth;
+
+    r = Tss2_MU_TPM2B_PUBLIC_Unmarshal(&filepub[0], filepub_size, NULL,
+                                       &tpm2data->pub);
+    ERRchktss(tpm2tss_tpm2data_read, r, goto error);
+
+    r = Tss2_MU_TPM2B_PRIVATE_Unmarshal(&filepriv[0], filepriv_size, NULL,
+                                        &tpm2data->priv);
+    ERRchktss(tpm2tss_tpm2data_read, r, goto error);
+
+    *tpm2Datap = tpm2data;
+    return 1;
+
+  error:
+    free(tpm2data);
+    return 0;
+}
