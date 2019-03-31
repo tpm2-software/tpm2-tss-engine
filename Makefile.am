@@ -41,12 +41,8 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-enginesdir= --with-completionsdir= \
                                --enable-unit
 
 # Initialize empty variables to be extended throughout
-lib_LTLIBRARIES =
-noinst_LTLIBRARIES =
 EXTRA_DIST =
 CLEANFILES =
-MOSTLYCLEANFILES =
-noinst_PROGRAMS =
 bin_PROGRAMS =
 
 ### Add ax_* rules ###
