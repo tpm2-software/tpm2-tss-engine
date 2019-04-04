@@ -31,7 +31,7 @@
 AC_PREREQ([2.68])
 
 AC_INIT([tpm2-tss-engine],
-        [1.0.0-rc3],
+        [1.0.0],
         [https://github.com/tpm2-software/tpm2-tss-engine/issues],
         [],
         [https://github.com/tpm2-software/tpm2-tss-engine])
