@@ -122,6 +122,9 @@ TESTS_SHELL = test/ecdsa.sh \
               test/sserver.sh \
               test/sclient.sh
 EXTRA_DIST += $(TESTS_SHELL)
+TEST_EXTENSIONS = .sh
+SH_LOG_COMPILER = $(srcdir)/test/sh_log_compiler.sh
+EXTRA_DIST += $(SH_LOG_COMPILER)
 
 if UNIT
 TESTS_UNIT += test/error_tpm2-tss-engine-common
