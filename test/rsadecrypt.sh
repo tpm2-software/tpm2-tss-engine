@@ -2,22 +2,15 @@
 
 set -eufx
 
-if [ -z "${OPENSSL_ENGINES-}" ]; then export OPENSSL_ENGINES=${PWD}/.libs; fi
-export LD_LIBRARY_PATH=$OPENSSL_ENGINES:${LD_LIBRARY_PATH-}
-export PATH=${PWD}:${PATH}
+echo -n "abcde12345abcde12345">mydata
 
-DIR=$(mktemp -d)
-echo -n "abcde12345abcde12345">${DIR}/mydata
+tpm2tss-genkey -a rsa -s 2048 -p abc mykey
 
-tpm2_startup -c || true
+echo "abc" | openssl rsa -engine tpm2tss -inform engine -in mykey -pubout -outform pem -out mykey.pub -passin stdin
 
-tpm2tss-genkey -a rsa -s 2048 -p abc ${DIR}/mykey
+openssl pkeyutl -pubin -inkey mykey.pub -encrypt -in mydata -out mycipher
+rm mydata
 
-echo "abc" | openssl rsa -engine tpm2tss -inform engine -in ${DIR}/mykey -pubout -outform pem -out ${DIR}/mykey.pub -passin stdin
-
-openssl pkeyutl -pubin -inkey ${DIR}/mykey.pub -encrypt -in ${DIR}/mydata -out ${DIR}/mycipher
-rm ${DIR}/mydata
-
-echo "abc" | openssl pkeyutl -engine tpm2tss -keyform engine -inkey ${DIR}/mykey -decrypt -in ${DIR}/mycipher -out ${DIR}/mydata -passin stdin
+echo "abc" | openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -decrypt -in mycipher -out mydata -passin stdin
 #this is a workaround because -decrypt sometimes exits 0 falsely
-test "x$(cat ${DIR}/mydata)" = "xabcde12345abcde12345"
+test "x$(cat mydata)" = "xabcde12345abcde12345"

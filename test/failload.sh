@@ -2,18 +2,10 @@
 
 set -eufx
 
-export LANG=C
-if [ -z "${OPENSSL_ENGINES-}" ]; then export OPENSSL_ENGINES=${PWD}/.libs; fi
-export LD_LIBRARY_PATH=$OPENSSL_ENGINES:${LD_LIBRARY_PATH-}
-export PATH=${PWD}:${PATH}
+echo -n "abcde12345abcde12345">mykey
+chmod ugo-rwx mykey
 
-DIR=$(mktemp -d)
-echo -n "abcde12345abcde12345">${DIR}/mykey
-chmod ugo-rwx ${DIR}/mykey
-
-tpm2_startup -c || true
-
-R="$(openssl rsa -engine tpm2tss -inform engine -in ${DIR}/mykey -pubout -outform pem -out ${DIR}/mykey.pub 2>&1 || true)"
+R="$(openssl rsa -engine tpm2tss -inform engine -in mykey -pubout -outform pem -out mykey.pub 2>&1 || true)"
 echo $R
 if ! echo $R | grep "unable to load Private Key" >/dev/null; then
     exit 1

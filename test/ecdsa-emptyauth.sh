@@ -2,21 +2,13 @@
 
 set -eufx
 
-export LANG=C
-if [ -z "${OPENSSL_ENGINES-}" ]; then export OPENSSL_ENGINES=${PWD}/.libs; fi
-export LD_LIBRARY_PATH=$OPENSSL_ENGINES:${LD_LIBRARY_PATH-}
-export PATH=${PWD}:${PATH}
+echo -n "abcde12345abcde12345">mydata
 
-DIR=$(mktemp -d)
-echo -n "abcde12345abcde12345">${DIR}/mydata
+tpm2tss-genkey -a ecdsa -c nist_p256 mykey
 
-tpm2_startup -c || true
+openssl pkeyutl -keyform engine -engine tpm2tss -inkey mykey -sign -in mydata -out mysig
 
-tpm2tss-genkey -a ecdsa -c nist_p256 ${DIR}/mykey
-
-openssl pkeyutl -keyform engine -engine tpm2tss -inkey ${DIR}/mykey -sign -in ${DIR}/mydata -out ${DIR}/mysig
-
-R="$(openssl pkeyutl -keyform engine -engine tpm2tss -inkey ${DIR}/mykey -verify -in ${DIR}/mydata -sigfile ${DIR}/mysig || true)"
+R="$(openssl pkeyutl -keyform engine -engine tpm2tss -inkey mykey -verify -in mydata -sigfile mysig || true)"
 if ! echo $R | grep "Signature Verified Successfully" >/dev/null; then
     echo $R
     exit 1
