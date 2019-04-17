@@ -22,7 +22,7 @@ tpm2_flushcontext -t
 echo "Generating RSA key pair"
 TPM_RSA_PUBKEY=${DIR}/rsakey.pub
 TPM_RSA_KEY=${DIR}/rsakey
-tpm2_create -p abc -C ${PARENT_CTX} -g sha256 -G rsa -u ${TPM_RSA_PUBKEY} -r ${TPM_RSA_KEY} -A sign\|decrypt\|fixedtpm\|fixedparent\|sensitivedataorigin\|userwithauth\|noda
+tpm2_create -p abc -C ${PARENT_CTX} -g sha256 -G rsa -u ${TPM_RSA_PUBKEY} -r ${TPM_RSA_KEY} -b sign\|decrypt\|fixedtpm\|fixedparent\|sensitivedataorigin\|userwithauth\|noda
 tpm2_flushcontext -t
 
 # Load Key to persistent handle
