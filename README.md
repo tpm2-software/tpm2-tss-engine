@@ -140,19 +140,12 @@ OpenSSL 1.1.0 and newer.
 ## Development prefixes
 In order to use this engine without `make install` for testing call:
 ```
-export LD_LIBRAY_PATH=${TPM2TSS}/src/tss2-{tcti,mu,sys,esys}/.libs:${PWD}/.libs
-export OPENSSL_ENGINES=${PWD}/.libs
-export PATH=${PWD}:${PATH}
+export LD_LIBRAY_PATH=${TPM2TSS}/src/tss2-{tcti,mu,sys,esys}/.libs
 export PKG_CONFIG_PATH=$PWD/../tpm2-tss/lib
 ./bootstrap
 ./configure \
     CFLAGS="-I$PWD/../tpm2-tss/include" \
     LDFLAGS="-L$PWD/../tpm2-tss/src/tss2-{esys,sys,mu,tcti}/.libs"
 make
-tpm_server
 make check
 ```
-make check will use any available TPM (including /dev/tpm0,
-/dev/tpmrm0) at this moment, until ESAPI allows runtime configuration of TCTI.
-
-PRECONDITION for tests: The owner password of the TPM must be set to zero.

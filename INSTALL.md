@@ -12,6 +12,9 @@
 * tpm2-tss >= 2.2.2
 * pandoc
 * expect
+* tpm_server
+* realpath
+* ss
 
 ## Ubuntu
 ```
@@ -26,7 +29,9 @@ sudo apt -y install \
   pkg-config \
   libssl-dev \
   pandoc \
-  expect
+  expect \
+  realpath \
+  ss
 git clone -b 2.2.x --depth=1 http://www.github.com/tpm2-software/tpm2-tss
 cd tpm2-tss
 ./bootstrap

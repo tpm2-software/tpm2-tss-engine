@@ -112,8 +112,6 @@ before_script:
 
 script:
 # build with all tests enabled
-  - tpm_server &
-  - sleep 1
   - CONFIGURE_OPTIONS="CFLAGS=-I${PWD}/installdir/usr/local/include LDFLAGS=-L${PWD}/installdir/usr/local/lib "
   - ./bootstrap
   - mkdir ./build

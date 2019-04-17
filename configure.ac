@@ -159,6 +159,17 @@ AS_IF([test "x$enable_integration" = xyes],
       [AC_CHECK_PROG([tpm2_startup], [tpm2_startup], [yes])
        AS_IF([test "x$tpm2_startup" != xyes],
              [AC_MSG_ERROR([Integration tests require the tpm2_startup executable])])
+       AC_CHECK_PROG([tpm_server], [tpm_server], [yes])
+       AS_IF([test "x$tpm_server" != xyes],
+             [AC_MSG_ERROR([Integration tests require the tpm_server executable])])
+       AC_CHECK_PROG([realpath], [realpath], [yes])
+       AS_IF([test "x$realpath" != xyes],
+             [AC_MSG_ERROR([Integration tests require the realpath executable])])
+       AC_CHECK_PROG([ss], [ss], [yes])
+       AS_IF([test "x$ss" != xyes],
+             [AC_MSG_ERROR([Integration tests require the ss executable])])
+       AS_IF([test "x$enable_tctienvvar" != xyes],
+             [AC_MSG_ERROR([Integration tests require building with TCTI environment variable support])])
       ])
 
 AC_OUTPUT
