@@ -21,10 +21,10 @@ tpm2tss-genkey -a ecdsa mykey
 
 echo -e "\n\n\n\n\n\n\n" | openssl req -new -x509 -engine tpm2tss -key mykey  -keyform engine -out mykey.crt
 
-openssl s_server -www -cert mykey.crt -key mykey -keyform engine -engine tpm2tss -accept 127.0.0.1:8443 &
+openssl s_server -www -cert mykey.crt -key mykey -keyform engine -engine tpm2tss -accept 127.0.0.1:8444 &
 SERVER=$!
 trap "cleanup" EXIT
 
 sleep 1
 
-echo "GET index.html" | openssl s_client -connect localhost:8443
+echo "GET index.html" | openssl s_client -connect localhost:8444
