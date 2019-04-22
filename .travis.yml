@@ -3,8 +3,7 @@ compiler:
   - gcc
   - clang
 
-sudo: false
-dist: trusty
+dist: xenial
 
 env:
   matrix:
@@ -24,6 +23,7 @@ addons:
     - autoconf-archive
     - automake
     - build-essential
+    - libcmocka-dev
     - libgcrypt20-dev
     - realpath
     - lcov
@@ -36,17 +36,6 @@ addons:
 install:
   - git clean -xdf
   - mkdir -p installdir/usr/local/bin
-# CMocka
-  - wget https://download.01.org/tpm2/cmocka-1.1.1.tar.xz
-  - sha256sum cmocka-1.1.1.tar.xz | grep -q f02ef48a7039aa77191d525c5b1aee3f13286b77a13615d11bc1148753fc0389 || travis_terminate 1
-  - tar -Jxvf cmocka-1.1.1.tar.xz
-  - pushd cmocka-1.1.1
-  - mkdir build
-  - cd build
-  - cmake ../ -DCMAKE_INSTALL_PREFIX=${PWD}/../../installdir/usr/local -DCMAKE_BUILD_TYPE=Release
-  - make
-  - make install
-  - popd
 # OpenSSL 1.0.2 / 1.1.0
   - git clone --branch $OPENSSL_BRANCH --depth=1 https://github.com/openssl/openssl.git
   - pushd openssl
@@ -59,15 +48,6 @@ install:
         make install DESTDIR=${PWD}/../installdir
     fi
   - which openssl
-  - popd
-# libcurl
-  - git clone --depth=1 -b curl-7_61_1 https://github.com/curl/curl.git
-  - pushd curl
-  - ./buildconf
-  - ./configure CFLAGS=-I${PWD}/../installdir/usr/local/include LDFLAGS=-L${PWD}/../installdir/usr/local/lib
-  - make -j$(nproc)
-  - make install DESTDIR=${PWD}/../installdir
-  - rm ${PWD}/../installdir/usr/local/lib/*.la
   - popd
 # TPM Simulator
   - wget --no-check-certificate https://download.01.org/tpm2/ibmtpm974.tar.gz
