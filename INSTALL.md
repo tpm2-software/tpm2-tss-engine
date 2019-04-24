@@ -11,7 +11,11 @@
 * OpenSSL >= 1.0.2
 * tpm2-tss >= 2.2.2
 * pandoc
+
+Integration tests also require:
 * expect
+* tpm2-tools >=4.0 (or master)
+* A TPM or tpm_server (the simulator)
 
 ## Ubuntu
 ```
@@ -25,14 +29,33 @@ sudo apt -y install \
   gcc \
   pkg-config \
   libssl-dev \
-  pandoc \
-  expect
+  pandoc
+
 git clone -b 2.2.x --depth=1 http://www.github.com/tpm2-software/tpm2-tss
 cd tpm2-tss
 ./bootstrap
 ./configure
 make -j$(nproc)
 sudo make install
+```
+
+Integration tests:
+```
+sudo apt -y install \
+  expect
+
+git clone --depth=1 http://github.com/tpm2-software/tpm2-tools
+cd tpm2-tools
+./bootstrap
+./configure
+make -j$(nproc)
+sudo make install
+
+wget https://download.01.org/tpm2/ibmtpm974.tar.gz
+mkdir ibmtpm
+tar axf ibmtpm974.tar.gz -C ibmtpm
+make -C ibmtpm/src -j$(nproc)
+sudo cp ibmtpm/src/tpm_server /usr/local/bin
 ```
 
 # Building from source
@@ -60,6 +83,14 @@ In order to link against a developer version of tpm2-tss (not installed):
   PKG_CONFIG_PATH=${TPM2TSS}/lib:$PKG_CONFIG_PATH \
   CFLAGS=-I${TPM2TSS}/include \
   LDFLAGS=-L${TPM2TSS}/src/tss2-{tcti,mu,sys,esys}/.libs 
+```
+
+## Testing
+In order to build the tests, pass the following options
+(see the additional dependencies above):
+```
+./configure --enable-integration --enable-unit
+make check
 ```
 
 # Post installation
