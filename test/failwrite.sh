@@ -11,7 +11,7 @@ DIR=$(mktemp -d)
 echo -n "abcde12345abcde12345">${DIR}/mykey
 chmod ugo-rwx ${DIR}/mykey
 
-tpm2_startup -c || true
+tpm2_startup --clear || true
 
 R="$(tpm2tss-genkey -a ecdsa -c nist_p256 -p abc ${DIR}/mykey 2>&1 || true)"
 echo $R

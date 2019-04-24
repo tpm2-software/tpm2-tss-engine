@@ -13,33 +13,40 @@ echo -n "abcde12345abcde12345">${DIR}/mydata.txt
 echo "Generating primary key"
 PARENT_CTX=${DIR}/primary_owner_key.ctx
 
-tpm2_startup -c || true
+tpm2_startup --clear || true
 
-tpm2_createprimary -a o -g sha256 -G rsa -o ${PARENT_CTX}
-tpm2_flushcontext -t
+tpm2_createprimary --hierarchy=o --halg=sha256 --kalg=rsa \
+                   --out-context-name=${PARENT_CTX}
+tpm2_flushcontext --transient-object
 
 # Create an RSA key pair
 echo "Generating RSA key pair"
 TPM_RSA_PUBKEY=${DIR}/rsakey.pub
 TPM_RSA_KEY=${DIR}/rsakey
-tpm2_create -p abc -C ${PARENT_CTX} -g sha256 -G rsa -u ${TPM_RSA_PUBKEY} -r ${TPM_RSA_KEY} -b sign\|decrypt\|fixedtpm\|fixedparent\|sensitivedataorigin\|userwithauth\|noda
-tpm2_flushcontext -t
+tpm2_create --auth-key=abc \
+            --context-parent=${PARENT_CTX} \
+            --halg=sha256 --kalg=rsa \
+            --pubfile=${TPM_RSA_PUBKEY} --privfile=${TPM_RSA_KEY} \
+            --object-attributes=sign\|decrypt\|fixedtpm\|fixedparent\|sensitivedataorigin\|userwithauth\|noda
+tpm2_flushcontext --transient-object
 
 # Load Key to persistent handle
 RSA_CTX=${DIR}/rsakey.ctx
-tpm2_load -C ${PARENT_CTX} -u ${TPM_RSA_PUBKEY} -r ${TPM_RSA_KEY} -o ${RSA_CTX}
-tpm2_flushcontext -t
+tpm2_load --context-parent=${PARENT_CTX} \
+          --pubfile=${TPM_RSA_PUBKEY} --privfile=${TPM_RSA_KEY} \
+          --out-context=${RSA_CTX}
+tpm2_flushcontext --transient-object
 
-HANDLE=$(tpm2_evictcontrol -a o -c ${RSA_CTX} | cut -d ' ' -f 2)
-tpm2_flushcontext -t
+HANDLE=$(tpm2_evictcontrol --hierarchy=o --context=${RSA_CTX} | cut -d ' ' -f 2)
+tpm2_flushcontext --transient-object
 
 # Signing Data
 echo "abc" | openssl pkeyutl -engine tpm2tss -keyform engine -inkey ${HANDLE} -sign -in ${DIR}/mydata.txt -out ${DIR}/mysig -passin stdin
 # Get public key of handle
-tpm2_readpublic -c ${HANDLE} -o ${DIR}/mykey.pem -f pem
+tpm2_readpublic --context=${HANDLE} --out-file=${DIR}/mykey.pem --format=pem
 
 # Release persistent HANDLE
-tpm2_evictcontrol -a o -c ${HANDLE}
+tpm2_evictcontrol --hierarchy=o --context=${HANDLE} --persistent=${HANDLE}
 
 R="$(openssl pkeyutl -pubin -inkey ${DIR}/mykey.pem -verify -in ${DIR}/mydata.txt -sigfile ${DIR}/mysig || true)"
 if ! echo $R | grep "Signature Verified Successfully" >/dev/null; then

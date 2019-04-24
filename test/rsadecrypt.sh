@@ -9,7 +9,7 @@ export PATH=${PWD}:${PATH}
 DIR=$(mktemp -d)
 echo -n "abcde12345abcde12345">${DIR}/mydata
 
-tpm2_startup -c || true
+tpm2_startup --clear || true
 
 tpm2tss-genkey -a rsa -s 2048 -p abc ${DIR}/mykey
 
