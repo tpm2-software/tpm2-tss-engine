@@ -30,7 +30,7 @@ tpm2_load --context-parent=${PARENT_CTX} \
           --out-context=${RSA_CTX}
 tpm2_flushcontext --transient-object
 
-HANDLE=$(tpm2_evictcontrol --hierarchy=o --context=${RSA_CTX} | cut -d ' ' -f 2)
+HANDLE=$(tpm2_evictcontrol --hierarchy=o --context=${RSA_CTX} | cut -d ' ' -f 2 | head -n 1)
 tpm2_flushcontext --transient-object
 
 # Signing Data
