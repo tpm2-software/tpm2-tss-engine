@@ -13,7 +13,7 @@ tpm2_createprimary --hierarchy=o --halg=sha256 --kalg=rsa \
 tpm2_flushcontext --transient-object
 
 # Load primary key to persistent handle
-HANDLE=$(tpm2_evictcontrol --hierarchy=o --context=${PARENT_CTX} | cut -d ' ' -f 2)
+HANDLE=$(tpm2_evictcontrol --hierarchy=o --context=${PARENT_CTX} | cut -d ' ' -f 2 | head -n 1)
 tpm2_flushcontext --transient-object
 
 # Generating a key underneath the persistent parent
