@@ -5,6 +5,8 @@ compiler:
 
 dist: xenial
 
+cache: ccache
+
 env:
   matrix:
   - OPENSSL_BRANCH=OpenSSL_1_0_2-stable TPM2TSS_BRANCH=2.2.x TPM2TOOLS_BRANCH=3.X
