@@ -16,7 +16,7 @@ PARENT_CTX=${DIR}/primary_owner_key.ctx
 tpm2_startup -c || true
 
 tpm2_createprimary --hierarchy=o --halg=sha256 --kalg=rsa \
-                   --out-context-name=${PARENT_CTX}
+                   --context=${PARENT_CTX}
 tpm2_flushcontext --transient-object
 
 # Create an RSA key pair
@@ -33,10 +33,10 @@ tpm2_flushcontext --transient-object
 RSA_CTX=${DIR}/rsakey.ctx
 tpm2_load --context-parent=${PARENT_CTX} \
           --pubfile=${TPM_RSA_PUBKEY} --privfile=${TPM_RSA_KEY} \
-          --out-context=${RSA_CTX}
+          --context=${RSA_CTX}
 tpm2_flushcontext --transient-object
 
-HANDLE=$(tpm2_evictcontrol --hierarchy=o --context=${RSA_CTX} | cut -d ' ' -f 2 | head -n 1)
+HANDLE=$(tpm2_evictcontrol --auth=o --context=${RSA_CTX} --persistent=0x81010001 | cut -d ' ' -f 2 | head -n 1)
 tpm2_flushcontext --transient-object
 
 # Signing Data
@@ -52,10 +52,10 @@ EOF
 fi
 
 # Get public key of handle
-tpm2_readpublic --context=${HANDLE} --out-file=${DIR}/mykey.pem --format=pem
+tpm2_readpublic --object=${HANDLE} --opu=${DIR}/mykey.pem --format=pem
 
 # Release persistent HANDLE
-tpm2_evictcontrol --hierarchy=o --context=${HANDLE} --persistent=${HANDLE}
+tpm2_evictcontrol --auth=o --handle=${HANDLE} --persistent=${HANDLE}
 
 R="$(openssl pkeyutl -pubin -inkey ${DIR}/mykey.pem -verify -in ${DIR}/mydata.txt -sigfile ${DIR}/mysig || true)"
 if ! echo $R | grep "Signature Verified Successfully" >/dev/null; then

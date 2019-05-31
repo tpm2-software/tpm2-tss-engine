@@ -8,8 +8,8 @@ dist: trusty
 
 env:
   matrix:
-  - OPENSSL_BRANCH=OpenSSL_1_0_2-stable TPM2TSS_BRANCH=2.2.x
-  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.2.x
+  - OPENSSL_BRANCH=OpenSSL_1_0_2-stable TPM2TSS_BRANCH=2.2.x TPM2TOOLS_BRANCH=3.X
+  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.2.x TPM2TOOLS_BRANCH=3.X
   global:
   - TPM2TOOLS_TCTI=mssim
   - PATH="${PWD}/installdir/usr/local/bin:${PATH}"
@@ -95,7 +95,7 @@ install:
   - rm ${PWD}/../installdir/usr/local/lib/*.la
   - popd
 # tpm2-tools
-  - git clone --depth=1 https://github.com/tpm2-software/tpm2-tools.git
+  - git clone --depth=1 -b ${TPM2TOOLS_BRANCH} https://github.com/tpm2-software/tpm2-tools.git
   - pushd tpm2-tools
   - mkdir m4 || true
   - cp ../autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/

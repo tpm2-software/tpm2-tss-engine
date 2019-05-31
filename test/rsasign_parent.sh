@@ -16,11 +16,11 @@ PARENT_CTX=${DIR}/primary_owner_key.ctx
 tpm2_startup -c || true
 
 tpm2_createprimary --hierarchy=o --halg=sha256 --kalg=rsa \
-                   --out-context-name=${PARENT_CTX}
+                   --context=${PARENT_CTX}
 tpm2_flushcontext --transient-object
 
 # Load primary key to persistent handle
-HANDLE=$(tpm2_evictcontrol --hierarchy=o --context=${PARENT_CTX} | cut -d ' ' -f 2 | head -n 1)
+HANDLE=$(tpm2_evictcontrol --auth=o --context=${PARENT_CTX} --persistent=0x81010001 | cut -d ' ' -f 2 | head -n 1)
 tpm2_flushcontext --transient-object
 
 # Generating a key underneath the persistent parent
@@ -32,7 +32,7 @@ cat ${DIR}/mykey.pub
 echo "abc" | openssl pkeyutl -engine tpm2tss -keyform engine -inkey ${DIR}/mykey -sign -in ${DIR}/mydata.txt -out ${DIR}/mysig -passin stdin
 
 # Release persistent HANDLE
-tpm2_evictcontrol --hierarchy=o --context=${HANDLE} --persistent=${HANDLE}
+tpm2_evictcontrol --auth=o --handle=${HANDLE} --persistent=${HANDLE}
 
 cat ${DIR}/mysig
 
