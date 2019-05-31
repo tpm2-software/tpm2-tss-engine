@@ -1,6 +1,8 @@
 /*******************************************************************************
  * Copyright 2017-2018, Fraunhofer SIT sponsored by Infineon Technologies AG
  * All rights reserved.
+ * Copyright (c) 2019, Wind River Systems.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -58,6 +60,7 @@ char *help =
     "    -p, --password  password for the created key (default: none)\n"
     "    -P, --parent    specific handle for the parent key (default: none)\n"
     "    -s, --keysize   key size in bits for rsa (default: 2048)\n"
+    "    -T, --tcti      set TCTI library path and TCTI configuration\n"
     "    -v, --verbose   print verbose messages\n"
     "\n";
 
@@ -72,6 +75,7 @@ static const struct option long_options[] = {
     {"password", required_argument, 0, 'p'},
     {"parent",   required_argument, 0, 'P'},
     {"keysize",  required_argument, 0, 's'},
+    {"tcti",     required_argument, 0, 'T'},
     {"verbose",  no_argument,       0, 'v'},
     {0,          0,                 0,  0 }
 };
@@ -170,6 +174,12 @@ parse_opts(int argc, char **argv)
                 ERR("Error parsing keysize.\n");
                 exit(1);
             }
+            break;
+        case 'T':
+            if(tcti_set_opts(optarg)) {
+                ERR("Error parsing tcti.\n");
+                exit(1);
+                }
             break;
         default:
             ERR("Unknown option at index %i.\n\n", opt_idx);
@@ -297,7 +307,11 @@ main(int argc, char **argv)
     TPM2_DATA *tpm2Data = NULL;
 
     /* Initialize the tpm2-tss engine */
+#ifdef OPENSSL_NO_DYNAMIC_ENGINE
+    ENGINE_load_tpm2tss();
+#else
     ENGINE_load_dynamic();
+#endif /* OPENSSL_NO_DYNAMIC_ENGINE */
 
     /* Openssl 1.1.0 requires the lib-prefix for the engine_id */
     ENGINE *tpm_engine = ENGINE_by_id("tpm2tss");

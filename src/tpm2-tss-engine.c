@@ -1,6 +1,8 @@
 /*******************************************************************************
  * Copyright 2017-2018, Fraunhofer SIT sponsored by Infineon Technologies AG
  * All rights reserved.
+ * Copyright (c) 2019, Wind River Systems.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -224,6 +226,7 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
         goto error;
     }
 
+    pkey->engine = e;
     DBG("TPM2 Key loaded\n");
 
     return pkey;
@@ -356,5 +359,22 @@ bind(ENGINE *e, const char *id)
     return 0;
 }
 
+#ifdef OPENSSL_NO_DYNAMIC_ENGINE
+void ENGINE_load_tpm2tss(void)
+{
+    ENGINE *eng = ENGINE_new();
+    if (!eng)
+        return;
+    if (!bind(eng, NULL)) {
+        ENGINE_free(eng);
+        return;
+    }
+
+    ENGINE_add(eng);
+    ENGINE_free(eng);
+    ERR_clear_error();
+}
+#else
 IMPLEMENT_DYNAMIC_BIND_FN(bind)
 IMPLEMENT_DYNAMIC_CHECK_FN()
+#endif /* OPENSSL_NO_DYNAMIC_ENGINE */
