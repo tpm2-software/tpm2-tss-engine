@@ -14,7 +14,7 @@
 
 Integration tests also require:
 * expect
-* tpm2-tools >=4.0 (or master)
+* tpm2-tools 3.2 (or 3.X branch)
 * tpm_server
 * realpath
 * ss
