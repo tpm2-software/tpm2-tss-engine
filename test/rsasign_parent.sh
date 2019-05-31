@@ -9,11 +9,11 @@ echo "Generating primary key"
 PARENT_CTX=primary_owner_key.ctx
 
 tpm2_createprimary --hierarchy=o --halg=sha256 --kalg=rsa \
-                   --out-context-name=${PARENT_CTX}
+                   --context=${PARENT_CTX}
 tpm2_flushcontext --transient-object
 
 # Load primary key to persistent handle
-HANDLE=$(tpm2_evictcontrol --hierarchy=o --context=${PARENT_CTX} | cut -d ' ' -f 2 | head -n 1)
+HANDLE=$(tpm2_evictcontrol --auth=o --context=${PARENT_CTX} --persistent=0x81010001 | cut -d ' ' -f 2 | head -n 1)
 tpm2_flushcontext --transient-object
 
 # Generating a key underneath the persistent parent
@@ -25,7 +25,7 @@ cat mykey.pub
 echo "abc" | openssl pkeyutl -engine tpm2tss -keyform engine -inkey mykey -sign -in mydata.txt -out mysig -passin stdin
 
 # Release persistent HANDLE
-tpm2_evictcontrol --hierarchy=o --context=${HANDLE} --persistent=${HANDLE}
+tpm2_evictcontrol --auth=o --handle=${HANDLE} --persistent=${HANDLE}
 
 #this is a workaround because -verify allways exits 1
 R="$(openssl pkeyutl -pubin -inkey mykey.pub -verify -in mydata.txt -sigfile mysig || true)"
