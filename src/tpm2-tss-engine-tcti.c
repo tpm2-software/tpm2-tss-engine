@@ -1,6 +1,8 @@
 //**********************************************************************;
 // Copyright (c) 2018, General Electric Company.
 // All rights reserved.
+// Copyright (c) 2019, Wind River Systems.
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -28,7 +30,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifndef NO_DL
 #include <dlfcn.h>
+#endif /* NO_DL */
 
 #include <tss2/tss2_tcti.h>
 #include <openssl/err.h>
@@ -37,6 +41,7 @@
 #include "tpm2-tss-engine-err.h"
 #include "tpm2-tss-engine-common.h"
 
+#ifndef NO_DL
 #define TMP2TSS_TCTI_NAMEFORMAT "libtss2-tcti-%s.so"
 
 static char *
@@ -68,7 +73,7 @@ tcti_expand_dlname(const char *shortname)
 static TSS2_RC
 tcti_dlopen(const char *dl_path, dl_handle_t *dlhandle_p)
 {
-    TSS2_RC r;
+    TSS2_RC r = TSS2_RC_SUCCESS;
     dl_handle_t dlhandle = dlopen(dl_path, RTLD_LAZY);
     if (dlhandle) {
         *dlhandle_p = dlhandle;
@@ -92,6 +97,7 @@ tcti_dlopen(const char *dl_path, dl_handle_t *dlhandle_p)
     }
     return r;
 }
+#endif /* NO_DL */
 
 /*  Given the handle of a loaded TCTI library, get the pointer to the
     TCTI-initialization function. */
@@ -99,8 +105,13 @@ static TSS2_RC
 tcti_get_init(dl_handle_t dlhandle, TSS2_TCTI_INIT_FUNC *init_p)
 {
     TSS2_RC r;
+#ifndef NO_DL
     TSS2_TCTI_INFO_FUNC getinfo =
         (TSS2_TCTI_INFO_FUNC) dlsym(dlhandle, TSS2_TCTI_INFO_SYMBOL);
+#else
+    extern const TSS2_TCTI_INFO* Tss2_Tcti_Info (void);
+    TSS2_TCTI_INFO_FUNC getinfo = (TSS2_TCTI_INFO_FUNC) Tss2_Tcti_Info;
+#endif /* NO_DL */
     if (!getinfo) {
         ERR(tcti_get_init, TPM2TSS_R_DL_INVALID);
         r = TSS2_BASE_RC_BAD_REFERENCE;
@@ -116,9 +127,11 @@ static void
 tcti_dlclose(dl_handle_t *dlhandle_p)
 {
     if (dlhandle_p && *dlhandle_p) {
+#ifndef NO_DL
 #ifndef DISABLE_DLCLOSE
         dlclose(*dlhandle_p);
-#endif
+#endif /* DISABLE_DLCLOSE */
+#endif /* NO_DL */
         *dlhandle_p = NULL;
     }
 }
@@ -195,10 +208,11 @@ tcti_set_opts(const char *opts)
        case D: path:\0      --> path=path\0,    cfg=\0
        case E: path:cfg\0   --> path=path\0,    cfg=cfg\0
 
-       Following opts are invalid (cfg without path. must be explicitly
-       handled, because dlopen("") returns handle of main program):
+       Following opts are invalid if NO_DL is not defined (cfg without path.
+       must be explicitly handled, because dlopen("") returns handle of main
+       program):
        case F: :\0          --> path=\0,        cfg=\0
-       case G: :cfg\0       --> path=\0,        cfg=\0
+       case G: :cfg\0       --> path=\0,        cfg=cfg\0
      */
     TSS2_RC r;
     char *path, *cfg;
@@ -222,10 +236,16 @@ tcti_set_opts(const char *opts)
             } else {
                 if (split == path) {
                     /* case F and case G */
+#ifndef NO_DL
                     ERR(tcti_set_opts, TPM2TSS_R_GENERAL_FAILURE);
                     /* Invalid opts: free the buffer */
                     OPENSSL_free(path);
                     r = TSS2_BASE_RC_BAD_REFERENCE;
+#else
+                    split[0] = '\0';
+                    cfg = split + 1;
+                    r = TSS2_RC_SUCCESS;
+#endif
                 } else {
                     /* case D and case E */
                     split[0] = '\0';
@@ -265,6 +285,7 @@ tcti_get_ctx(TSS2_TCTI_CONTEXT **ctx_p, dl_handle_t *dlhandle_p)
             *dlhandle_p = NULL;
             r = TPM2_RC_SUCCESS;
         } else {
+#ifndef NO_DL
             /*  open the shared library at path */
             dl_handle_t dlhandle;
             r = tcti_dlopen(tcti_path, &dlhandle);
@@ -281,6 +302,13 @@ tcti_get_ctx(TSS2_TCTI_CONTEXT **ctx_p, dl_handle_t *dlhandle_p)
                     ERR(tcti_get_ctx, TPM2TSS_R_GENERAL_FAILURE);
                 }
             }
+#else
+            /*  allocate and initialize the TCTI context */
+            r = __tcti_get_ctx(NULL, tcti_cfg, ctx_p);
+            if (TPM2_RC_SUCCESS != r) {
+                ERR(tcti_get_ctx, TPM2TSS_R_GENERAL_FAILURE);
+            }
+#endif /* NO_DL */
         }
     }
     return r;
@@ -298,7 +326,11 @@ TSS2_RC
 tcti_free_ctx(TSS2_TCTI_CONTEXT **ctx_p, dl_handle_t *dlhandle_p)
 {
     TSS2_RC r;
+#ifndef NO_DL
     if (!ctx_p || !dlhandle_p) {
+#else
+    if (!ctx_p) {
+#endif /* NO_DL */
         ERR(tcti_free_ctx, ERR_R_PASSED_NULL_PARAMETER);
         r = TSS2_BASE_RC_BAD_REFERENCE;
     } else {
