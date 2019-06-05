@@ -444,9 +444,9 @@ init_tpm_parent(ESYS_AUXCONTEXT *eactx_p,
                 TPM2_HANDLE parentHandle, ESYS_TR *parent)
 {
     TSS2_RC r;
-    TPM2B_PUBLIC *primaryTemplate = &primaryRsaTemplate;
-    TPMS_CAPABILITY_DATA *capabilityData;
-    int index;
+    TPM2B_PUBLIC *primaryTemplate = NULL;
+    TPMS_CAPABILITY_DATA *capabilityData = NULL;
+    UINT32 index;
     *parent = ESYS_TR_NONE;
     eactx_p->dlhandle = NULL;
     eactx_p->ectx = NULL;
@@ -480,6 +480,23 @@ init_tpm_parent(ESYS_AUXCONTEXT *eactx_p,
             primaryTemplate = &primaryEccTemplate;
             break;
         }
+    }
+
+    if (primaryTemplate == NULL) {
+        for (index = 0; index < capabilityData->data.algorithms.count; index++) {
+            if (capabilityData->data.algorithms.algProperties[index].alg == TPM2_ALG_RSA) {
+                primaryTemplate = &primaryRsaTemplate;
+                break;
+            }
+        }
+    }
+
+    if (capabilityData != NULL)
+        free (capabilityData);
+
+    if (primaryTemplate == NULL) {
+        ERR(init_tpm_parent, TPM2TSS_R_UNKNOWN_ALG);
+        goto error;
     }
 
     r = Esys_CreatePrimary(eactx_p->ectx, ESYS_TR_RH_OWNER,
