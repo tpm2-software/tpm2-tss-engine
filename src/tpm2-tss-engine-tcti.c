@@ -208,11 +208,10 @@ tcti_set_opts(const char *opts)
        case D: path:\0      --> path=path\0,    cfg=\0
        case E: path:cfg\0   --> path=path\0,    cfg=cfg\0
 
-       Following opts are invalid if NO_DL is not defined (cfg without path.
-       must be explicitly handled, because dlopen("") returns handle of main
-       program):
+       Following opts are invalid (cfg without path. must be explicitly
+       handled, because dlopen("") returns handle of main program):
        case F: :\0          --> path=\0,        cfg=\0
-       case G: :cfg\0       --> path=\0,        cfg=cfg\0
+       case G: :cfg\0       --> path=\0,        cfg=\0
      */
     TSS2_RC r;
     char *path, *cfg;
@@ -236,16 +235,10 @@ tcti_set_opts(const char *opts)
             } else {
                 if (split == path) {
                     /* case F and case G */
-#ifndef NO_DL
                     ERR(tcti_set_opts, TPM2TSS_R_GENERAL_FAILURE);
                     /* Invalid opts: free the buffer */
                     OPENSSL_free(path);
                     r = TSS2_BASE_RC_BAD_REFERENCE;
-#else
-                    split[0] = '\0';
-                    cfg = split + 1;
-                    r = TSS2_RC_SUCCESS;
-#endif
                 } else {
                     /* case D and case E */
                     split[0] = '\0';
