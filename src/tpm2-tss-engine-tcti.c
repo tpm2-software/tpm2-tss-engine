@@ -73,7 +73,7 @@ tcti_expand_dlname(const char *shortname)
 static TSS2_RC
 tcti_dlopen(const char *dl_path, dl_handle_t *dlhandle_p)
 {
-    TSS2_RC r = TSS2_RC_SUCCESS;
+    TSS2_RC r;
     dl_handle_t dlhandle = dlopen(dl_path, RTLD_LAZY);
     if (dlhandle) {
         *dlhandle_p = dlhandle;
