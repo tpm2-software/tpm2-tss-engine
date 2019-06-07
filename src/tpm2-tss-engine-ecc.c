@@ -278,6 +278,7 @@ populate_ecc(EC_KEY *key)
         EC_GROUP_free(ecgroup);
         return 0;
     }
+    EC_KEY_set_asn1_flag(key, OPENSSL_EC_NAMED_CURVE);
     EC_GROUP_free(ecgroup);
 
     x = BN_bin2bn(tpm2Data->pub.publicArea.unique.ecc.x.buffer,
