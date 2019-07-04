@@ -1,6 +1,8 @@
 /*******************************************************************************
  * Copyright 2017-2018, Fraunhofer SIT sponsored by Infineon Technologies AG
  * All rights reserved.
+ * Copyright (c) 2019, Wind River Systems.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -78,7 +80,40 @@ TSS2_RC init_tpm_key (  ESYS_AUXCONTEXT *eactx_p,
 
 #define ENGINE_HASH_ALG TPM2_ALG_SHA256
 
-#define TPM2B_PUBLIC_PRIMARY_TEMPLATE { \
+#define TPM2B_PUBLIC_PRIMARY_RSA_TEMPLATE { \
+    .publicArea = { \
+        .type = TPM2_ALG_RSA, \
+        .nameAlg = ENGINE_HASH_ALG, \
+        .objectAttributes = (TPMA_OBJECT_USERWITHAUTH | \
+                             TPMA_OBJECT_RESTRICTED | \
+                             TPMA_OBJECT_DECRYPT | \
+                             TPMA_OBJECT_NODA | \
+                             TPMA_OBJECT_FIXEDTPM | \
+                             TPMA_OBJECT_FIXEDPARENT | \
+                             TPMA_OBJECT_SENSITIVEDATAORIGIN), \
+        .authPolicy = { \
+             .size = 0, \
+         }, \
+        .parameters.rsaDetail = { \
+             .symmetric = { \
+                 .algorithm = TPM2_ALG_AES, \
+                 .keyBits.aes = 128, \
+                 .mode.aes = TPM2_ALG_CFB, \
+              }, \
+             .scheme = { \
+                .scheme = TPM2_ALG_NULL, \
+                .details = {} \
+             }, \
+             .keyBits = 2048, \
+             .exponent = 0,\
+         }, \
+        .unique.rsa = { \
+             .size = 0, \
+         } \
+     } \
+}
+
+#define TPM2B_PUBLIC_PRIMARY_ECC_TEMPLATE { \
     .publicArea = { \
         .type = TPM2_ALG_ECC, \
         .nameAlg = ENGINE_HASH_ALG, \
