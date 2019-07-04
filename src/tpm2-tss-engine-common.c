@@ -1,6 +1,8 @@
 /*******************************************************************************
  * Copyright 2017-2018, Fraunhofer SIT sponsored by Infineon Technologies AG
  * All rights reserved.
+ * Copyright (c) 2019, Wind River Systems.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -404,7 +406,9 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
     return 0;
 }
 
-static TPM2B_PUBLIC primaryTemplate = TPM2B_PUBLIC_PRIMARY_TEMPLATE;
+static TPM2B_PUBLIC primaryEccTemplate = TPM2B_PUBLIC_PRIMARY_ECC_TEMPLATE;
+static TPM2B_PUBLIC primaryRsaTemplate = TPM2B_PUBLIC_PRIMARY_RSA_TEMPLATE;
+
 static TPM2B_SENSITIVE_CREATE primarySensitive = {
     .sensitive = {
         .userAuth = {
@@ -440,6 +444,9 @@ init_tpm_parent(ESYS_AUXCONTEXT *eactx_p,
                 TPM2_HANDLE parentHandle, ESYS_TR *parent)
 {
     TSS2_RC r;
+    TPM2B_PUBLIC *primaryTemplate = NULL;
+    TPMS_CAPABILITY_DATA *capabilityData = NULL;
+    UINT32 index;
     *parent = ESYS_TR_NONE;
     eactx_p->dlhandle = NULL;
     eactx_p->ectx = NULL;
@@ -462,9 +469,39 @@ init_tpm_parent(ESYS_AUXCONTEXT *eactx_p,
     r = Esys_TR_SetAuth(eactx_p->ectx, ESYS_TR_RH_OWNER, &ownerauth);
     ERRchktss(init_tpm_parent, r, goto error);
 
+    r = Esys_GetCapability (eactx_p->ectx,
+                            ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
+                            TPM2_CAP_ALGS, 0, TPM2_MAX_CAP_ALGS,
+                            NULL, &capabilityData);
+    ERRchktss(init_tpm_parent, r, goto error);
+
+    for (index = 0; index < capabilityData->data.algorithms.count; index++) {
+        if (capabilityData->data.algorithms.algProperties[index].alg == TPM2_ALG_ECC) {
+            primaryTemplate = &primaryEccTemplate;
+            break;
+        }
+    }
+
+    if (primaryTemplate == NULL) {
+        for (index = 0; index < capabilityData->data.algorithms.count; index++) {
+            if (capabilityData->data.algorithms.algProperties[index].alg == TPM2_ALG_RSA) {
+                primaryTemplate = &primaryRsaTemplate;
+                break;
+            }
+        }
+    }
+
+    if (capabilityData != NULL)
+        free (capabilityData);
+
+    if (primaryTemplate == NULL) {
+        ERR(init_tpm_parent, TPM2TSS_R_UNKNOWN_ALG);
+        goto error;
+    }
+
     r = Esys_CreatePrimary(eactx_p->ectx, ESYS_TR_RH_OWNER,
                            ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                           &primarySensitive, &primaryTemplate, &allOutsideInfo,
+                           &primarySensitive, primaryTemplate, &allOutsideInfo,
                            &allCreationPCR,
                            parent, NULL, NULL, NULL, NULL);
     if (r == 0x000009a2) {
