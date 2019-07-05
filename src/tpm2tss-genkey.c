@@ -1,6 +1,8 @@
 /*******************************************************************************
  * Copyright 2017-2018, Fraunhofer SIT sponsored by Infineon Technologies AG
  * All rights reserved.
+ * Copyright (c) 2019, Wind River Systems.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -297,7 +299,11 @@ main(int argc, char **argv)
     TPM2_DATA *tpm2Data = NULL;
 
     /* Initialize the tpm2-tss engine */
+#ifdef OPENSSL_NO_DYNAMIC_ENGINE
+    ENGINE_load_tpm2tss();
+#else
     ENGINE_load_dynamic();
+#endif /* OPENSSL_NO_DYNAMIC_ENGINE */
 
     /* Openssl 1.1.0 requires the lib-prefix for the engine_id */
     ENGINE *tpm_engine = ENGINE_by_id("tpm2tss");

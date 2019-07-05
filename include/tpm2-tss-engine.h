@@ -1,6 +1,8 @@
 /*******************************************************************************
  * Copyright 2017-2018, Fraunhofer SIT sponsored by Infineon Technologies AG
  * All rights reserved.
+ * Copyright (c) 2019, Wind River Systems.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -82,5 +84,10 @@ tpm2tss_ecc_getappdata(EC_KEY *key);
 
 int
 tpm2tss_ecc_setappdata(EC_KEY *key, TPM2_DATA *data);
+
+#ifdef OPENSSL_NO_DYNAMIC_ENGINE
+void
+ENGINE_load_tpm2tss(void);
+#endif /* OPENSSL_NO_DYNAMIC_ENGINE */
 
 #endif /* TPM2_TSS_ENGINE_H */
