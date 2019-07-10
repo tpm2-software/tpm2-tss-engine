@@ -462,6 +462,9 @@ init_tpm_parent(ESYS_AUXCONTEXT *eactx_p,
                                   parent);
         ERRchktss(init_tpm_parent, r, goto error);
 
+        r = Esys_TR_SetAuth(eactx_p->ectx, *parent, &parentauth);
+        ERRchktss(init_tpm_parent, r, goto error);
+
         return TSS2_RC_SUCCESS;
     }
 

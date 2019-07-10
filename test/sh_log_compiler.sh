@@ -7,6 +7,9 @@ export PATH="$PWD:$PATH"
 
 test_script="$(realpath "$1")"
 
+echo "Creating tpm2tss symlink"
+ln -fs libtpm2tss.so .libs/tpm2tss.so
+
 tmp_dir="$(mktemp --directory)"
 echo "Switching to temporary directory $tmp_dir"
 cd "$tmp_dir"

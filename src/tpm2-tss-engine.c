@@ -54,6 +54,7 @@ static const char *engine_id = "tpm2tss";
 static const char *engine_name = "TPM2-TSS engine for OpenSSL";
 
 TPM2B_DIGEST ownerauth = { .size = 0 };
+TPM2B_DIGEST parentauth = { .size = 0 };
 
 /** Retrieve password
  *
@@ -120,6 +121,9 @@ static const ENGINE_CMD_DEFN cmd_defns[] = {
     { TPM2TSS_SET_TCTI, "SET_TCTI",
      "Set the TCTI module and options (default none)",
      ENGINE_CMD_FLAG_STRING },
+    { TPM2TSS_SET_PARENTAUTH, "SET_PARENTAUTH",
+     "Set the password for the parent key (default none)",
+     ENGINE_CMD_FLAG_STRING },
     {0, NULL, NULL, 0}
 };
 
@@ -158,6 +162,19 @@ engine_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) ())
                 return 1;
             }
         }
+    case TPM2TSS_SET_PARENTAUTH:
+        if (!p) {
+            DBG("Setting parent auth to empty auth.\n");
+            parentauth.size = 0;
+            return 1;
+        }
+        DBG("Setting parent auth to password.\n");
+        if (strlen((char *)p) > sizeof(parentauth.buffer) - 1) {
+            return 0;
+        }
+        parentauth.size = strlen((char *)p);
+        memcpy(&parentauth.buffer[0], p, parentauth.size);
+        return 1;
     default:
         break;
     }
