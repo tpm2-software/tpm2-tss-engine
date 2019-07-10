@@ -117,6 +117,7 @@ TESTS_SHELL = test/ecdsa.sh \
               test/failload.sh \
               test/failwrite.sh \
               test/rsasign_parent.sh \
+              test/rsasign_parent_pass.sh \
               test/rsasign_persistent.sh \
               test/rsasign_persistent_emptyauth.sh \
               test/sserver.sh \

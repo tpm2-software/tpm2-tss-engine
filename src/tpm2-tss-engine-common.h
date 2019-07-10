@@ -44,6 +44,7 @@
 #include <openssl/pem.h>
 
 extern TPM2B_DIGEST ownerauth;
+extern TPM2B_DIGEST parentauth;
 
 int init_ecc(ENGINE *e);
 int init_rand(ENGINE *e);

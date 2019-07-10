@@ -59,9 +59,10 @@ char *help =
     "    -P, --parent    specific handle for the parent key (default: none)\n"
     "    -s, --keysize   key size in bits for rsa (default: 2048)\n"
     "    -v, --verbose   print verbose messages\n"
+    "    -W, --parentpw  password for the parent key (default: none)\n"
     "\n";
 
-static const char *optstr = "a:c:e:ho:p:P:s:v";
+static const char *optstr = "a:c:e:ho:p:P:s:vW:";
 
 static const struct option long_options[] = {
     {"alg",      required_argument, 0, 'a'},
@@ -73,6 +74,7 @@ static const struct option long_options[] = {
     {"parent",   required_argument, 0, 'P'},
     {"keysize",  required_argument, 0, 's'},
     {"verbose",  no_argument,       0, 'v'},
+    {"parentpw", required_argument, 0, 'W'},
     {0,          0,                 0,  0 }
 };
 
@@ -84,6 +86,7 @@ static struct opt {
     char *ownerpw;
     char *password;
     TPM2_HANDLE parent;
+    char *parentpw;
     int keysize;
     int verbose;
 } opt;
@@ -108,6 +111,7 @@ parse_opts(int argc, char **argv)
     opt.ownerpw = NULL;
     opt.password = NULL;
     opt.parent = 0;
+    opt.parentpw = NULL;
     opt.keysize = 2048;
     opt.verbose = 0;
 
@@ -164,6 +168,9 @@ parse_opts(int argc, char **argv)
                 ERR("Error parsing parent handle");
                 exit(1);
             }
+            break;
+        case 'W':
+            opt.parentpw = optarg;
             break;
         case 's':
             if (sscanf(optarg, "%i", &opt.keysize) != 1) {
@@ -316,6 +323,11 @@ main(int argc, char **argv)
 
     if (!ENGINE_ctrl(tpm_engine, TPM2TSS_SET_OWNERAUTH, 0, opt.ownerpw, NULL)) {
         ERR("Could not set ownerauth\n");
+        return 1;
+    }
+
+    if (!ENGINE_ctrl(tpm_engine, TPM2TSS_SET_PARENTAUTH, 0, opt.parentpw, NULL)) {
+        ERR("Could not set parentauth\n");
         return 1;
     }
 

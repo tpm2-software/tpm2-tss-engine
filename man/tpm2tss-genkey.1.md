@@ -47,6 +47,9 @@ key information. This file can then be loaded with OpenSSL using
   * `-v`, `--verbose`:
     Print verbose messages
 
+  * `-W <password>`, `--parentpw <password>`:
+    Password for the parent key (default: none)
+
 # EXAMPLES
 
 Engine informations can be retrieved using:

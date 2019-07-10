@@ -27,9 +27,13 @@ _tpm2tss-genkey()
         COMPREPLY=( $(compgen -W "2048" -- ${cur}) );
         return 0
         ;;
+    -W | --parentpw)
+        COMPREPLY=""
+        return 0
+        ;;
     esac;
 
-    opts="-a --alg -c --curve -e --exponent -h --help -o --ownerpw -p --password -s --keysize -v --verbose"
+    opts="-a --alg -c --curve -e --exponent -h --help -o --ownerpw -p --password -s --keysize -v --verbose -W --parentpw"
     if [[ ${cur} = -* ]] ; then
         COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
         return 0
