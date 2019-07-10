@@ -2,9 +2,6 @@
 
 set -eufx
 
-#The following is for DESTDIR-installations of openssl
-export OPENSSL_CONF=$(find $(dirname $(which openssl))/../../ -name openssl.cnf | head -n 1)
-
 if openssl version | grep "OpenSSL 1.0.2" >/dev/null; then
     echo "OpenSSL 1.0.2 does not load the certificate; private key mismatch ???"
     exit 77

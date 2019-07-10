@@ -39,14 +39,9 @@ install:
 # OpenSSL 1.0.2 / 1.1.0
   - git clone --branch $OPENSSL_BRANCH --depth=1 https://github.com/openssl/openssl.git
   - pushd openssl
-  - ./config --prefix=/usr/local --openssldir=/usr/local/openssl shared
+  - ./config --prefix=${PWD}/../installdir/usr/local --openssldir=${PWD}/../installdir/usr/local/openssl shared
   - make -j$(nproc)
-  - |
-    if [ "$OPENSSL_BRANCH" == "OpenSSL_1_0_2-stable" ]; then
-        make install INSTALL_PREFIX=${PWD}/../installdir
-    else
-        make install DESTDIR=${PWD}/../installdir
-    fi
+  - make install
   - which openssl
   - popd
 # TPM Simulator
