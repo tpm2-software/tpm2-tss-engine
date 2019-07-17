@@ -53,8 +53,8 @@ static const char *engine_id = "tpm2tss";
  */
 static const char *engine_name = "TPM2-TSS engine for OpenSSL";
 
-TPM2B_DIGEST ownerauth = { .size = 0 };
-TPM2B_DIGEST parentauth = { .size = 0 };
+TPM2B_AUTH ownerauth = { .size = 0 };
+TPM2B_AUTH parentauth = { .size = 0 };
 
 /** Retrieve password
  *
@@ -88,9 +88,10 @@ get_auth(const char *prompt_info, UI_METHOD *ui_method, void *cb_data,
         ERR(get_auth, TPM2TSS_R_UI_ERROR);
         goto error;
     }
+    char password[sizeof(auth->buffer) + 1];
     if (0 > UI_add_input_string(ui, ui_prompt, UI_INPUT_FLAG_DEFAULT_PWD,
-                                (char *)&auth->buffer[0], 0,
-                                sizeof(auth->buffer) - 1)) {
+                                password, 0,
+                                sizeof(password) - 1)) {
         ERR(get_auth, TPM2TSS_R_UI_ERROR);
         goto error;
     }
@@ -99,11 +100,12 @@ get_auth(const char *prompt_info, UI_METHOD *ui_method, void *cb_data,
         ERR(get_auth, TPM2TSS_R_UI_ERROR);
         goto error;
     }
-    auth->size = strlen((char *)&auth->buffer[0]);
+    DBG("password is %s\n", password);
+    if (!init_auth(auth, password, 0)) {
+        goto error;
+    }
     OPENSSL_free(ui_prompt);
     UI_free(ui);
-
-    DBG("password is %s\n", (char *)&auth->buffer[0]);
 
     return 1;
  error:
@@ -117,13 +119,13 @@ get_auth(const char *prompt_info, UI_METHOD *ui_method, void *cb_data,
 static const ENGINE_CMD_DEFN cmd_defns[] = {
     { TPM2TSS_SET_OWNERAUTH, "SET_OWNERAUTH",
      "Set the password for the owner hierarchy (default none)",
-     ENGINE_CMD_FLAG_STRING },
+     ENGINE_CMD_FLAG_NUMERIC | ENGINE_CMD_FLAG_STRING },
     { TPM2TSS_SET_TCTI, "SET_TCTI",
      "Set the TCTI module and options (default none)",
      ENGINE_CMD_FLAG_STRING },
     { TPM2TSS_SET_PARENTAUTH, "SET_PARENTAUTH",
      "Set the password for the parent key (default none)",
-     ENGINE_CMD_FLAG_STRING },
+     ENGINE_CMD_FLAG_NUMERIC | ENGINE_CMD_FLAG_STRING },
     {0, NULL, NULL, 0}
 };
 
@@ -131,22 +133,11 @@ static int
 engine_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) ())
 {
     (void)(e);
-    (void)(i);
     (void)(f);
     switch (cmd) {
     case TPM2TSS_SET_OWNERAUTH:
-        if (!p) {
-            DBG("Setting owner auth to empty auth.\n");
-            ownerauth.size = 0;
-            return 1;
-        }
-        DBG("Setting owner auth to password.\n");
-        if (strlen((char *)p) > sizeof(ownerauth.buffer) - 1) {
-            return 0;
-        }
-        ownerauth.size = strlen((char *)p);
-        memcpy(&ownerauth.buffer[0], p, ownerauth.size);
-        return 1;
+        DBG(p ? "Setting owner auth.\n" : "Clearing owner auth.\n");
+        return init_auth(&ownerauth, p, i);
     case TPM2TSS_SET_TCTI:
         tcti_clear_opts();
         if (!p) {
@@ -163,18 +154,8 @@ engine_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) ())
             }
         }
     case TPM2TSS_SET_PARENTAUTH:
-        if (!p) {
-            DBG("Setting parent auth to empty auth.\n");
-            parentauth.size = 0;
-            return 1;
-        }
-        DBG("Setting parent auth to password.\n");
-        if (strlen((char *)p) > sizeof(parentauth.buffer) - 1) {
-            return 0;
-        }
-        parentauth.size = strlen((char *)p);
-        memcpy(&parentauth.buffer[0], p, parentauth.size);
-        return 1;
+        DBG(p ? "Setting parent auth.\n" : "Clearing parent auth.\n");
+        return init_auth(&parentauth, p, i);
     default:
         break;
     }

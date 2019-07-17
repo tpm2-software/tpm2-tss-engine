@@ -43,8 +43,10 @@
 #include <openssl/asn1.h>
 #include <openssl/pem.h>
 
-extern TPM2B_DIGEST ownerauth;
-extern TPM2B_DIGEST parentauth;
+extern TPM2B_AUTH ownerauth;
+extern TPM2B_AUTH parentauth;
+
+int init_auth(TPM2B_AUTH* a, const char* p, size_t l);
 
 int init_ecc(ENGINE *e);
 int init_rand(ENGINE *e);

@@ -515,16 +515,13 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
 
     if (password) {
         DBG("Setting a password for the created key.\n");
-        if (strlen(password) > sizeof(tpm2Data->userauth.buffer) - 1) {
+        if (!init_auth(&tpm2Data->userauth, password, 0)) {
             goto error;
         }
-        tpm2Data->userauth.size = strlen(password);
-        memcpy(&tpm2Data->userauth.buffer[0], password,
-               tpm2Data->userauth.size);
 
-        inSensitive.sensitive.userAuth.size = strlen(password);
-        memcpy(&inSensitive.sensitive.userAuth.buffer[0], password,
-               strlen(password));
+        inSensitive.sensitive.userAuth.size = tpm2Data->userauth.size;
+        memcpy(&inSensitive.sensitive.userAuth.buffer[0],
+               &tpm2Data->userauth.buffer[0], tpm2Data->userauth.size);
     } else
         tpm2Data->emptyAuth = 1;
 

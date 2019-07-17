@@ -17,6 +17,18 @@
 The keylength is determined by `bits`. The exponent is determined by `e`.
 The new key will be protected by `password`.
 
+## Password Formatting
+
+Passwords can be provided in two forms, string and hex-string. While a string is used
+directly for authentication a hex-string is first converted into binary form, allowing the use
+of non-printable characters. To control the interpretation the following prefixes can be used:
+
+* no prefix - Default to string interpretation.
+
+* `hex:` - Specify password in hex-string format.
+
+* `str:` - Force string interpretation, i.e. if the password starts with "hex:" or "str:".
+
 # RETURN VALUE
 
 Upon successful completion **tpm2tss_rsa_genkey**() returns 1. Otherwise 0.

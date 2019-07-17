@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <openssl/engine.h>
 #include <openssl/pem.h>
@@ -54,6 +55,84 @@ ASN1_SEQUENCE(TSSPRIVKEY) = {
 IMPLEMENT_ASN1_FUNCTIONS(TSSPRIVKEY);
 IMPLEMENT_PEM_write_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY);
 IMPLEMENT_PEM_read_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY);
+
+#define HEX_PREFIX "hex:"
+#define HEX_PREFIX_LEN (sizeof(HEX_PREFIX) - 1)
+
+#define STR_PREFIX "str:"
+#define STR_PREFIX_LEN (sizeof(STR_PREFIX) - 1)
+
+static int
+init_hex_auth(TPM2B_AUTH *a, const char *p)
+{
+    size_t l = strlen(p), i;
+    if (l % 2 || l / 2 > sizeof(a->buffer)) {
+        return 0;
+    }
+    for (i = 0; i < l; ++i) {
+        if (!isxdigit(p[i])) {
+            return 0;
+        }
+    }
+    a->size = l / 2;
+    char digit[3] = {0, 0, 0};
+    for (i = 0; i < a->size; ++i) {
+        digit[0] = p[i * 2];
+        digit[1] = p[i * 2 + 1];
+        a->buffer[i] = strtol(digit, NULL, 16);
+    }
+    return 1;
+}
+
+static int
+init_str_auth(TPM2B_AUTH *a, const char *p)
+{
+    if (!strncmp(p, HEX_PREFIX, HEX_PREFIX_LEN)) {
+        return init_hex_auth(a, p + HEX_PREFIX_LEN);
+    }
+    if (!strncmp(p, STR_PREFIX, STR_PREFIX_LEN)) {
+        p += STR_PREFIX_LEN;
+    }
+    size_t l = strlen(p);
+    if (l > sizeof(a->buffer)) {
+        return 0;
+    }
+    a->size = l;
+    memcpy(&a->buffer[0], p, l);
+    return 1;
+}
+
+/** Initialize the auth structure with a password
+ *
+ * Initialize the auth structure with a buffer, or NULL terminated string with support for hex
+ * encoded contents. String interpretation can be controlled using prefixes as follows:
+ *
+ * * no prefix - Default to string interpretation.
+ * * `hex:` - Specify password in hex-string format.
+ * * `str:` - Force string interpretation, i.e. if the password starts with "hex:" or "str:".
+ * @param a The auth structure.
+ * @param p The password data.
+ * @param l The length of the password data (or 0 if NULL terminated).
+ * @retval 1 on success
+ * @retval 0 on failure
+ */
+int
+init_auth(TPM2B_AUTH *a, const char *p, size_t l)
+{
+    if (!p) {
+        a->size = 0;
+        return 1;
+    }
+    if (0 == l) {
+        return init_str_auth(a, p);
+    }
+    if (l > sizeof(a->buffer)) {
+        return 0;
+    }
+    a->size = l;
+    memcpy(&a->buffer[0], p, l);
+    return 1;
+}
 
 /** Initialize the Auxiliary Esys context
  *
