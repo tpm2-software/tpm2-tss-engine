@@ -1,0 +1,22 @@
+openssl_conf = openssl_init
+
+[openssl_init]
+engines = engine_section
+
+[engine_section]
+tpm2tss = tpm2tss_section
+
+[tpm2tss_section]
+engine_id = tpm2tss
+dynamic_path = /usr/lib/engines-1.1/libtpm2tss.so
+default_algorithms = RSA,ECDSA
+init = 1
+#SET_TCTI = <TCTI_options>
+#SET_OWNERAUTH = <could_set_password_here, but then it's readable>
+#SET_PARENTAUTH = <password_of_parent_key> 
+
+[req]
+distinguished_name = subject
+
+[subject]
+# prompts and defaults here
