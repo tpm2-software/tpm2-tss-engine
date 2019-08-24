@@ -7,9 +7,9 @@ dist: xenial
 
 env:
   matrix:
-  - OPENSSL_BRANCH=OpenSSL_1_0_2-stable TPM2TSS_BRANCH=2.2.x TPM2TOOLS_BRANCH=3.X
-  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.2.x TPM2TOOLS_BRANCH=3.X
-  - OPENSSL_BRANCH=OpenSSL_1_1_1-stable TPM2TSS_BRANCH=2.2.x TPM2TOOLS_BRANCH=3.X
+  - OPENSSL_BRANCH=OpenSSL_1_0_2-stable TPM2TSS_BRANCH=2.3.x TPM2TOOLS_BRANCH=4.X
+  - OPENSSL_BRANCH=OpenSSL_1_1_0-stable TPM2TSS_BRANCH=2.3.x TPM2TOOLS_BRANCH=4.X
+  - OPENSSL_BRANCH=OpenSSL_1_1_1-stable TPM2TSS_BRANCH=2.3.x TPM2TOOLS_BRANCH=4.X
   global:
   - TPM2TOOLS_TCTI=mssim
   - PATH="${PWD}/installdir/usr/local/bin:${PATH}"
@@ -63,6 +63,7 @@ install:
   - git clone --depth=1 -b ${TPM2TSS_BRANCH} https://github.com/tpm2-software/tpm2-tss.git
   - pushd tpm2-tss
   - cp ../autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
+  - cp ../autoconf-archive-2017.09.28/m4/ax_is_release.m4 m4/
   - cp ../autoconf-archive-2017.09.28/m4/ax_prog_doxygen.m4 m4/
   - ./bootstrap
   - ./configure CFLAGS=-I${PWD}/../installdir/usr/local/include LDFLAGS=-L${PWD}/../installdir/usr/local/lib --disable-doxygen-doc
@@ -74,7 +75,7 @@ install:
   - git clone --depth=1 -b ${TPM2TOOLS_BRANCH} https://github.com/tpm2-software/tpm2-tools.git
   - pushd tpm2-tools
   - mkdir m4 || true
-  - cp ../autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 m4/
+  - cp ../autoconf-archive-2017.09.28/m4/ax_code_coverage.m4 ../autoconf-archive-2017.09.28/m4/ax_is_release.m4 m4/
   - ./bootstrap
   # Some workarounds for tpm2-tools with -Wno-XXX
   - ./configure --disable-hardening CFLAGS="-I${PWD}/../installdir/usr/local/include -Wno-unused-value -Wno-missing-field-initializer" LDFLAGS=-L${PWD}/../installdir/usr/local/lib
