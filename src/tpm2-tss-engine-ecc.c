@@ -92,6 +92,33 @@ static TPM2B_PUBLIC keyEcTemplate = {
      }
 };
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+static int EC_GROUP_order_bits(const EC_GROUP *group)
+{
+    if (!group)
+        return 0;
+
+    BIGNUM *order = BN_new();
+
+    if (order == NULL) {
+        ERR_clear_error();
+        return 0;
+    }
+
+    int ret = 0;
+
+    if (!EC_GROUP_get_order(group, order, NULL)) {
+        ERR_clear_error();
+        BN_free(order);
+        return 0;
+    }
+
+    ret = BN_num_bits(order);
+    BN_free(order);
+    return ret;
+}
+#endif
+
 /** Sign data using a TPM key
  *
  * This function performs the sign function using the private key in ECDSA.
@@ -142,18 +169,44 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 
     TPMT_SIG_SCHEME inScheme = { .scheme = TPM2_ALG_ECDSA };
 
-    /* ECDSA says to truncate the incoming hash to fit the curve. */
-    switch (tpm2Data->pub.publicArea.parameters.eccDetail.curveID) {
-    case TPM2_ECC_NIST_P256:
-        if (dgst_len > 256/8)
-            dgst_len = 256/8;
-        break;
-    case TPM2_ECC_NIST_P384:
-        if (dgst_len > 384/8)
-            dgst_len = 384/8;
-        break;
-    default:
-        break;
+    /*
+     * ECDSA signatures truncate the incoming hash to fit the curve,
+     * and the signature mechanism is the same regardless of the
+     * hash being used.
+     *
+     * The TPM bizarrely wants to be told the hash algorithm, and
+     * either it or the TSS will validate that the digest length
+     * matches the hash that it's told, despite it having no business
+     * caring about such things.
+     *
+     * So, we can truncate the digest any pretend it's any smaller
+     * digest that the TPM actually does support, as long as that
+     * digest is larger than the size of the curve.
+     */
+    int curve_len = (EC_GROUP_order_bits(EC_KEY_get0_group(eckey)) + 7) / 8;
+    /* If we couldn't work it out, don't truncate */
+    if (!curve_len)
+	    curve_len = dgst_len;
+
+    if (dgst_len == SHA_DIGEST_LENGTH ||
+	(curve_len <= SHA_DIGEST_LENGTH && dgst_len > SHA_DIGEST_LENGTH)) {
+	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA1;
+	    dgst_len = SHA_DIGEST_LENGTH;
+    } else if (dgst_len == SHA256_DIGEST_LENGTH ||
+	(curve_len <= SHA256_DIGEST_LENGTH && dgst_len > SHA256_DIGEST_LENGTH)) {
+	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA256;
+	    dgst_len = SHA256_DIGEST_LENGTH;
+    } else if (dgst_len == SHA384_DIGEST_LENGTH ||
+	(curve_len <= SHA384_DIGEST_LENGTH && dgst_len > SHA384_DIGEST_LENGTH)) {
+	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA384;
+	    dgst_len = SHA384_DIGEST_LENGTH;
+    } else if (dgst_len == SHA512_DIGEST_LENGTH ||
+	(curve_len <= SHA512_DIGEST_LENGTH && dgst_len > SHA512_DIGEST_LENGTH)) {
+	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA512;
+	    dgst_len = SHA512_DIGEST_LENGTH;
+    } else {
+        ERR(rsa_priv_enc, TPM2TSS_R_PADDING_UNKNOWN);
+        goto error;
     }
 
     TPM2B_DIGEST digest = { .size = dgst_len };
@@ -162,25 +215,6 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
         goto error;
     }
     memcpy(&digest.buffer[0], dgst, dgst_len);
-
-    /* Infer hashAlg from dgst_len */
-    switch (dgst_len) {
-    case SHA_DIGEST_LENGTH:
-        inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA1;
-        break;
-    case SHA256_DIGEST_LENGTH:
-        inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA256;
-        break;
-    case SHA384_DIGEST_LENGTH:
-        inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA384;
-        break;
-    case SHA512_DIGEST_LENGTH:
-        inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA512;
-        break;
-    default:
-        ERR(rsa_priv_enc, TPM2TSS_R_PADDING_UNKNOWN);
-        goto error;
-    }
 
     r = init_tpm_key(&eactx, &keyHandle, tpm2Data);
     ERRchktss(ecdsa_sign, r, goto error);
