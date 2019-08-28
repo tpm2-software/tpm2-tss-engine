@@ -34,6 +34,10 @@
 #include <openssl/engine.h>
 #include <tss2/tss2_tpm2_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     KEY_TYPE_BLOB,
     KEY_TYPE_HANDLE
@@ -84,4 +88,7 @@ tpm2tss_ecc_getappdata(EC_KEY *key);
 int
 tpm2tss_ecc_setappdata(EC_KEY *key, TPM2_DATA *data);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* TPM2_TSS_ENGINE_H */
