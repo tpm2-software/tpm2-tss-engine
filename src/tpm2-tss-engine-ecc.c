@@ -205,13 +205,13 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA512;
 	    dgst_len = SHA512_DIGEST_LENGTH;
     } else {
-        ERR(rsa_priv_enc, TPM2TSS_R_PADDING_UNKNOWN);
+        ERR(ecdsa_sign, TPM2TSS_R_PADDING_UNKNOWN);
         goto error;
     }
 
     TPM2B_DIGEST digest = { .size = dgst_len };
     if (digest.size > sizeof(digest.buffer)) {
-        ERR(rsa_priv_enc, TPM2TSS_R_DIGEST_TOO_LARGE);
+        ERR(ecdsa_sign, TPM2TSS_R_DIGEST_TOO_LARGE);
         goto error;
     }
     memcpy(&digest.buffer[0], dgst, dgst_len);
@@ -511,7 +511,7 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
         tpm2Data->emptyAuth = 1;
 
     r = init_tpm_parent(&eactx, parentHandle, &parent);
-    ERRchktss(tpm2tss_rsa_genkey, r, goto error);
+    ERRchktss(tpm2tss_ecc_genkey, r, goto error);
 
     tpm2Data->parent = parentHandle;
 
@@ -521,7 +521,7 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
                     ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
                     &inSensitive, &inPublic, &allOutsideInfo, &allCreationPCR,
                     &keyPrivate, &keyPublic, NULL, NULL, NULL);
-    ERRchktss(tpm2tss_rsa_genkey, r, goto error);
+    ERRchktss(tpm2tss_ecc_genkey, r, goto error);
 
     DBG("Generated the ECC key inside the TPM.\n");
 
@@ -529,7 +529,7 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     tpm2Data->priv = *keyPrivate;
 
     if (!tpm2tss_ecc_setappdata(key, tpm2Data)) {
-        ERR(tpm2tss_rsa_genkey, TPM2TSS_R_GENERAL_FAILURE);
+        ERR(tpm2tss_ecc_genkey, TPM2TSS_R_GENERAL_FAILURE);
         goto error;
     }
 
