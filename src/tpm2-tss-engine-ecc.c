@@ -251,8 +251,13 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
     r = -1;
  out:
     free(sig);
-    if (keyHandle != ESYS_TR_NONE)
-        Esys_FlushContext(eactx.ectx, keyHandle);
+    if (keyHandle != ESYS_TR_NONE) {
+        if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
+            Esys_TR_Close(eactx.ectx, &keyHandle);
+        } else {
+            Esys_FlushContext(eactx.ectx, keyHandle);
+        }
+    }
     if (r != TSS2_RC_SUCCESS && ret != NULL) {
         if (bns)
             BN_free(bns);
