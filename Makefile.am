@@ -111,6 +111,7 @@ TESTS_INTEGRATION += $(TESTS_SHELL)
 endif #INTEGRATION
 TESTS_SHELL = test/ecdsa.sh \
               test/ecdsa-emptyauth.sh \
+              test/ecdsa-handle-flush.sh \
               test/rand.sh \
               test/rsadecrypt.sh \
               test/rsasign.sh \
