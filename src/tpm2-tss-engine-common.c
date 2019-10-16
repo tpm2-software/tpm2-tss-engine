@@ -243,10 +243,16 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         goto error;
     }
 
-    /* If the persistent key has the NODA flag set, we check whether it does
-       have an empty authValue. If NODA is not set, then we don't check because
-       that would increment the DA lockout counter */
-    if ((outPublic->publicArea.objectAttributes & TPMA_OBJECT_NODA) != 0) {
+    /* If the TPMT_PUBLIC area has a zero length AuthPolicy we go with emptyAuth */
+    if (!outPublic->publicArea.authPolicy.size) {
+        tpm2Data->emptyAuth = 1;
+    }
+
+    /* If authPolicy is set on an object, it could still be empty auth. Hence, we
+       try harder to be smart meaning that iff the persistent key has the NODA flag
+       set, we check whether it does have an empty authValue. If NODA is not set,
+       then we don't check because that would increment the DA lockout counter */
+    if (!tpm2Data->emptyAuth && (outPublic->publicArea.objectAttributes & TPMA_OBJECT_NODA) != 0) {
         ESYS_TR session;
         TPMT_SYM_DEF sym = {.algorithm = TPM2_ALG_AES,
                             .keyBits = {.aes = 128},
