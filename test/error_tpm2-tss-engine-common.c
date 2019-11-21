@@ -54,7 +54,7 @@ check_init_tpm_parent(void **state)
 {
     (void)(state);
     TSS2_RC r;
-    ESYS_AUXCONTEXT e;
+    ESYS_CONTEXT *e;
     ESYS_TR t;
     r = init_tpm_parent(&e, -1, &t);
     assert_int_not_equal(r, TSS2_RC_SUCCESS);
@@ -69,7 +69,7 @@ check_init_tpm_key(void **state)
     i = tpm2tss_rsa_genkey(NULL, 0, NULL, NULL, 0); 
     assert_int_equal(i, 0);
 
-    ESYS_AUXCONTEXT e;
+    ESYS_CONTEXT *e;
     ESYS_TR t;
     TPM2_DATA td = { .privatetype = KEY_TYPE_HANDLE };
     r = init_tpm_key(&e, &t, &td);

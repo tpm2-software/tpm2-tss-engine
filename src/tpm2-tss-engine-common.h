@@ -52,28 +52,17 @@ int init_ecc(ENGINE *e);
 int init_rand(ENGINE *e);
 int init_rsa(ENGINE *e);
 
-typedef void* dl_handle_t;
+TSS2_RC esys_ctx_init (ESYS_CONTEXT **esys_ctx);
 
-TSS2_RC tcti_set_opts (const char *opts);
+TSS2_RC esys_ctx_free (ESYS_CONTEXT **esys_ctx);
 
-void tcti_clear_opts (void);
+TSS2_RC init_tpm_parent (   ESYS_CONTEXT **esys_ctx,
+                            TPM2_HANDLE  parentHandle,
+                            ESYS_TR      *parent);
 
-typedef struct {
-    dl_handle_t     dlhandle;
-    ESYS_CONTEXT    *ectx;
-} ESYS_AUXCONTEXT;
-
-TSS2_RC esys_auxctx_init (ESYS_AUXCONTEXT *eactx_p);
-
-TSS2_RC esys_auxctx_free (ESYS_AUXCONTEXT *eactx_p);
-
-TSS2_RC init_tpm_parent (   ESYS_AUXCONTEXT *eactx_p,
-                            TPM2_HANDLE     parentHandle,
-                            ESYS_TR         *parent);
-
-TSS2_RC init_tpm_key (  ESYS_AUXCONTEXT *eactx_p,
-                        ESYS_TR         *keyHandle,
-                        TPM2_DATA       *tpm2Data);
+TSS2_RC init_tpm_key (  ESYS_CONTEXT **esys_ctx,
+                        ESYS_TR      *keyHandle,
+                        TPM2_DATA    *tpm2Data);
 
 #define ENGINE_HASH_ALG TPM2_ALG_SHA256
 

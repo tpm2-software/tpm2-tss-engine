@@ -51,15 +51,15 @@
 static int
 rand_bytes(unsigned char *buf, int num)
 {
-    ESYS_AUXCONTEXT eactx = { NULL, NULL };
+    ESYS_CONTEXT *esys_ctx = NULL;
     TSS2_RC r;
 
-    r = esys_auxctx_init(&eactx);
+    r = esys_ctx_init(&esys_ctx);
     ERRchktss(rand_bytes, r, goto end);
 
     TPM2B_DIGEST *b;
     while (num > 0) {
-        r = Esys_GetRandom(eactx.ectx,
+        r = Esys_GetRandom(esys_ctx,
                            ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
                            num, &b);
         ERRchktss(rand_bytes, r, goto end);
@@ -70,7 +70,7 @@ rand_bytes(unsigned char *buf, int num)
         free(b);
     }
 
-    esys_auxctx_free(&eactx);
+    esys_ctx_free(&esys_ctx);
 
  end:
     return (r == TSS2_RC_SUCCESS);
