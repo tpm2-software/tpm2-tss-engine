@@ -56,6 +56,8 @@ static const char *engine_name = "TPM2-TSS engine for OpenSSL";
 TPM2B_DIGEST ownerauth = { .size = 0 };
 TPM2B_DIGEST parentauth = { .size = 0 };
 
+char *tcti_nameconf = NULL;
+
 /** Retrieve password
  *
  * Helper function to retreive a password from the user.
@@ -148,20 +150,14 @@ engine_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) ())
         memcpy(&ownerauth.buffer[0], p, ownerauth.size);
         return 1;
     case TPM2TSS_SET_TCTI:
-        tcti_clear_opts();
+        OPENSSL_free(tcti_nameconf);
         if (!p) {
             DBG("Setting TCTI to the ESAPI default\n");
-            return 1;
         } else {
-            TSS2_RC r = tcti_set_opts(p);
-            if (TPM2_RC_SUCCESS != r) {
-                ERR(init_engine, TPM2TSS_R_GENERAL_FAILURE);
-                return 0;
-            } else {
-                DBG("Setting TCTI option to \"%s\"\n", (char *)p);
-                return 1;
-            }
+            tcti_nameconf = OPENSSL_strdup(p);
+            DBG("Setting TCTI option to \"%s\"\n", tcti_nameconf);
         }
+        return 1;
     case TPM2TSS_SET_PARENTAUTH:
         if (!p) {
             DBG("Setting parent auth to empty auth.\n");
@@ -271,14 +267,8 @@ init_engine(ENGINE *e) {
 
 #ifdef ENABLE_TCTIENVVAR
     /*  Set the default TCTI option from the environment */
-    char *tctienvvar = getenv("TPM2TSSENGINE_TCTI");
-    if (tctienvvar) {
-        TSS2_RC r = tcti_set_opts(tctienvvar);
-        if (TPM2_RC_SUCCESS != r) {
-            ERR(init_engine, TPM2TSS_R_GENERAL_FAILURE);
-            return 0;
-        }
-    }
+    OPENSSL_free(tcti_nameconf);
+    tcti_nameconf = OPENSSL_strdup(getenv("TPM2TSSENGINE_TCTI"));
 #endif
 
     rc = init_rand(e);
@@ -313,7 +303,7 @@ static int
 destroy_engine(ENGINE *e)
 {
     (void)(e);
-    tcti_clear_opts();
+    OPENSSL_free(tcti_nameconf);
     ERR_unload_TPM2TSS_strings();
     return 1;
 }

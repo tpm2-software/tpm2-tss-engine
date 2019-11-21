@@ -34,6 +34,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <tss2/tss2_tctildr.h>
+
 #include <openssl/engine.h>
 #include <openssl/pem.h>
 #include <openssl/rand.h>
@@ -57,7 +59,7 @@ IMPLEMENT_PEM_read_bio(TSSPRIVKEY, TSSPRIVKEY, TSSPRIVKEY_PEM_STRING, TSSPRIVKEY
 
 /** Initialize the Auxiliary Esys context
  *
- * Initialize an extended Esys context that further includes a dlhandle.
+ * Initialize an Esys context.
  * @param eaxctx_p The context to initialize.
  * @retval TSS2_RC_SUCCESS on success
  * @retval TSS2_BASE_RC_BAD_REFERENCE if no pointer was provided
@@ -72,10 +74,9 @@ esys_auxctx_init(ESYS_AUXCONTEXT *eactx_p)
         ERR(esys_auxctx_init, TPM2TSS_R_GENERAL_FAILURE);
         r = TSS2_BASE_RC_BAD_REFERENCE;
     } else {
-        TSS2_TCTI_CONTEXT *tcti_ctx;
-        dl_handle_t dlhandle;
+        TSS2_TCTI_CONTEXT *tcti_ctx = NULL;
 
-        r = tcti_get_ctx(&tcti_ctx, &dlhandle);
+        r = Tss2_TctiLdr_Initialize(tcti_nameconf, &tcti_ctx);
         if (TSS2_RC_SUCCESS != r) {
             ERR(esys_auxctx_init, TPM2TSS_R_GENERAL_FAILURE);
         } else {
@@ -83,10 +84,9 @@ esys_auxctx_init(ESYS_AUXCONTEXT *eactx_p)
             r = Esys_Initialize(&ectx, tcti_ctx, NULL);
             if (TSS2_RC_SUCCESS != r) {
                 ERR(esys_auxctx_init, TPM2TSS_R_GENERAL_FAILURE);
-                tcti_free_ctx(&tcti_ctx, &dlhandle);
+                Tss2_TctiLdr_Finalize(&tcti_ctx);
             } else {
                 eactx_p->ectx = ectx;
-                eactx_p->dlhandle = dlhandle;
             }
         }
     }
@@ -96,7 +96,6 @@ esys_auxctx_init(ESYS_AUXCONTEXT *eactx_p)
 /** Finalize the Auxiliary Esys context
  *
  * Get the TCTI context and finalize this alognside the Esys context.
- * Also close the dlhandle if one was opened.
  * @param eaxctx_p The extended Esys context
  * @retval TSS2_RC_SUCCESS on success
  * @retval TSS2_BASE_RC_BAD_REFERENCE if no pointer was provided
@@ -116,8 +115,7 @@ esys_auxctx_free(ESYS_AUXCONTEXT *eactx_p)
         if (TSS2_RC_SUCCESS != r) {
             ERR(esys_auxctx_free, TPM2TSS_R_GENERAL_FAILURE);
         } else {
-            tcti_free_ctx(&tcti_ctx, &(eactx_p->dlhandle));
-            eactx_p->dlhandle = NULL;
+            Tss2_TctiLdr_Finalize(&tcti_ctx);
         }
     }
     return r;
@@ -447,7 +445,6 @@ init_tpm_parent(ESYS_AUXCONTEXT *eactx_p,
     TPMS_CAPABILITY_DATA *capabilityData = NULL;
     UINT32 index;
     *parent = ESYS_TR_NONE;
-    eactx_p->dlhandle = NULL;
     eactx_p->ectx = NULL;
 
     DBG("Establishing connection with TPM.\n");
@@ -539,7 +536,6 @@ init_tpm_key (ESYS_AUXCONTEXT *eactx_p, ESYS_TR *keyHandle, TPM2_DATA *tpm2Data)
     TSS2_RC r;
     ESYS_TR parent = ESYS_TR_NONE;
     *keyHandle = ESYS_TR_NONE;
-    eactx_p->dlhandle = NULL;
     eactx_p->ectx = NULL;
 
     if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {

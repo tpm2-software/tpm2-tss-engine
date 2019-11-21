@@ -68,14 +68,6 @@ static ERR_STRING_DATA TPM2TSS_f[] = {
     ERR_F(rsa_priv_dec),
     ERR_F(tpm2tss_rsa_genkey),
     ERR_F(populate_rsa),
-    /* tpm2-tss-engine-tcti.c */
-    ERR_F(tcti_expand_dlname),
-    ERR_F(tcti_dlopen),
-    ERR_F(tcti_get_init),
-    ERR_F(__tcti_get_ctx),
-    ERR_F(tcti_set_opts),
-    ERR_F(tcti_get_ctx),
-    ERR_F(tcti_free_ctx),
     {0, NULL}
 };
 

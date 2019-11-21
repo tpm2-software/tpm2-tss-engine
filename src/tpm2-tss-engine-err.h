@@ -93,14 +93,6 @@ void ERR_error(int function, int reason, const char *file, int line);
 #define TPM2TSS_F_rsa_priv_dec     141
 #define TPM2TSS_F_tpm2tss_rsa_genkey    142
 #define TPM2TSS_F_populate_rsa          143
-/* tpm2-tss-engine-tcti.c */
-#define TPM2TSS_F_tcti_expand_dlname    150
-#define TPM2TSS_F_tcti_dlopen           151
-#define TPM2TSS_F_tcti_get_init         152
-#define TPM2TSS_F___tcti_get_ctx        153
-#define TPM2TSS_F_tcti_set_opts         154
-#define TPM2TSS_F_tcti_get_ctx          155
-#define TPM2TSS_F_tcti_free_ctx         156
 
 /* Reason codes */
 #define TPM2TSS_R_TPM2DATA_READ_FAILED  100

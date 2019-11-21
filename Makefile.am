@@ -33,9 +33,11 @@
 INCLUDE_DIRS    = -I$(srcdir)/include -I$(srcdir)/src
 ACLOCAL_AMFLAGS = -I m4 --install
 AM_CFLAGS       = $(INCLUDE_DIRS) $(EXTRA_CFLAGS) $(TSS2_ESYS_CFLAGS) \
-                  $(TSS2_MU_CFLAGS) $(CRYPTO_CFLAGS) $(CODE_COVERAGE_CFLAGS)
+                  $(TSS2_MU_CFLAGS) $(TSS2_TCTILDR_CFLAGS) $(CRYPTO_CFLAGS) \
+                  $(CODE_COVERAGE_CFLAGS)
 AM_LDFLAGS      = $(EXTRA_LDFLAGS) $(CODE_COVERAGE_LIBS)
-AM_LDADD        = $(TSS2_ESYS_LIBS) $(TSS2_MU_LIBS) $(CRYPTO_LIBS) -ldl
+AM_LDADD        = $(TSS2_ESYS_LIBS) $(TSS2_MU_LIBS) $(TSS2_TCTILDR_LIBS) \
+                  $(CRYPTO_LIBS) -ldl
 
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-enginesdir= --with-completionsdir= \
                                --enable-unit
@@ -64,7 +66,6 @@ include_HEADERS = include/tpm2-tss-engine.h
 libtpm2tss_la_SOURCES = src/tpm2-tss-engine.c \
                         src/tpm2-tss-engine-common.c \
                         src/tpm2-tss-engine-common.h \
-                        src/tpm2-tss-engine-tcti.c \
                         src/tpm2-tss-engine-err.c \
                         src/tpm2-tss-engine-err.h \
                         src/tpm2-tss-engine-ecc.c \
@@ -97,7 +98,7 @@ bin_PROGRAMS += tpm2tss-genkey
 tpm2tss_genkey_SOURCES = src/tpm2tss-genkey.c
 tpm2tss_genkey_CFLAGS = $(AM_CFLAGS)
 tpm2tss_genkey_LDADD = $(AM_LDADD) libtpm2tss.la
-tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS) -ltss2-tcti-mssim -ltss2-tcti-device
+tpm2tss_genkey_LDFLAGS = $(AM_LDFLAGS)
 
 ### Tests ###
 TESTS = $(TESTS_INTEGRATION) $(TESTS_UNIT)
