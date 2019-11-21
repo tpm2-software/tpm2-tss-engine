@@ -112,13 +112,12 @@ esys_auxctx_free(ESYS_AUXCONTEXT *eactx_p)
     } else {
         TSS2_TCTI_CONTEXT *tcti_ctx;
         r = Esys_GetTcti(eactx_p->ectx, &tcti_ctx);
+        Esys_Finalize(&(eactx_p->ectx));
         if (TSS2_RC_SUCCESS != r) {
             ERR(esys_auxctx_free, TPM2TSS_R_GENERAL_FAILURE);
         } else {
-            Esys_Finalize(&(eactx_p->ectx));
             tcti_free_ctx(&tcti_ctx, &(eactx_p->dlhandle));
             eactx_p->dlhandle = NULL;
-            eactx_p->ectx = NULL;
         }
     }
     return r;
