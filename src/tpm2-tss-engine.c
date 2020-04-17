@@ -240,7 +240,8 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
     DBG("TPM2 Key loaded\n");
 
     return pkey;
- error:
+error:
+    free(tpm2Data);
     return NULL;
 }
 
