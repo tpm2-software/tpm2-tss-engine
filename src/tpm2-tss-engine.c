@@ -241,7 +241,8 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
 
     return pkey;
 error:
-    free(tpm2Data);
+    if (tpm2Data)
+        OPENSSL_free(tpm2Data);
     return NULL;
 }
 
