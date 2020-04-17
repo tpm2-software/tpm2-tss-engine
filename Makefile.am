@@ -130,6 +130,7 @@ TESTS_SHELL = test/ecdsa.sh \
 EXTRA_DIST += $(TESTS_SHELL)
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER = $(srcdir)/test/sh_log_compiler.sh
+SH_LOG_FLAGS = $(INTEGRATION_ARGS)
 EXTRA_DIST += $(SH_LOG_COMPILER)
 
 if UNIT

@@ -164,8 +164,22 @@ AC_ARG_ENABLE([integration],
                             [build integration tests against TPM])],,
             [enable_integration=no])
 AM_CONDITIONAL([INTEGRATION], [test "x$enable_integration" != xno])
-AS_IF([test "x$enable_integration" = xyes],
-      [AC_CHECK_PROG([tpm2_startup], [tpm2_startup], [yes])
+
+# Use physical TPM device for testing
+AC_ARG_WITH([device],
+            [AS_HELP_STRING([--with-device=<device>],[TPM device for testing])],
+            [AS_IF([test \( -w "$with_device" \)  -a \( -r "$with_device" \)],
+                   [AC_MSG_RESULT([success])
+                    AX_NORMALIZE_PATH([with_device])
+                    with_device_set=yes],
+                   [AC_MSG_ERROR([TPM device provided does not exist or is not writable])])],
+            [with_device_set=no])
+AM_CONDITIONAL([TESTDEVICE],[test "x$with_device_set" = xyes])
+
+# Integration test with simulator
+AS_IF([test "x$enable_integration" = xyes && test "x$with_device_set" = xno],
+      [integration_args=""
+       AC_CHECK_PROG([tpm2_startup], [tpm2_startup], [yes])
        AS_IF([test "x$tpm2_startup" != xyes],
              [AC_MSG_ERROR([Integration tests require the tpm2_startup executable])])
        AC_CHECK_PROG([tpm_server], [tpm_server], [yes])
@@ -179,6 +193,18 @@ AS_IF([test "x$enable_integration" = xyes],
              [AC_MSG_ERROR([Integration tests require the ss executable])])
        AS_IF([test "x$enable_tctienvvar" != xyes],
              [AC_MSG_ERROR([Integration tests require building with TCTI environment variable support])])
+       AC_SUBST([INTEGRATION_ARGS], [$integration_args])
+      ])
+
+# Integration test with physical device
+AS_IF([test "x$enable_integration" = xyes &&  test "x$with_device_set" = xyes ],
+      [integration_args="$with_device"
+       AC_CHECK_PROG([realpath], [realpath], [yes])
+       AS_IF([test "x$realpath" != xyes],
+             [AC_MSG_ERROR([Integration tests require the realpath executable])])
+       AS_IF([test "x$enable_tctienvvar" != xyes],
+             [AC_MSG_ERROR([Integration tests require building with TCTI environment variable support])])
+       AC_SUBST([INTEGRATION_ARGS], [$integration_args])
       ])
 
 AX_VALGRIND_CHECK
@@ -214,5 +240,6 @@ $PACKAGE_NAME $VERSION
     man-pages:      $PANDOC
     enginesdir:     $with_enginesdir
     completionsdir: $with_completionsdir
+    device:         $with_device
 ])
-    
+
