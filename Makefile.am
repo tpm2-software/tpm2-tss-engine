@@ -57,6 +57,9 @@ else
 @CODE_COVERAGE_RULES@
 endif
 
+# ax_valgrind_check
+@VALGRIND_CHECK_RULES@
+
 ### OpenSSL Engine ###
 openssl_enginedir = $(ENGINESDIR)
 openssl_engine_LTLIBRARIES = libtpm2tss.la
