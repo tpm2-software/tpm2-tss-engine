@@ -41,6 +41,9 @@ key information. This file can then be loaded with OpenSSL using
   * `-p <password>`, `--password <password>`:
     Password for the created key (default: none)
 
+  * `-P <handle>`, `--parent <handle>`:
+    Specific handle for the parent key (default: none)
+
   * `-s <keysize>`, `--keysize <keysize>`:
     If alg rsa is chosen, the key size in bits (default: 2048)
 
