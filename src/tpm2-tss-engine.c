@@ -270,7 +270,9 @@ init_engine(ENGINE *e) {
 #ifdef ENABLE_TCTIENVVAR
     /*  Set the default TCTI option from the environment */
     OPENSSL_free(tcti_nameconf);
-    tcti_nameconf = OPENSSL_strdup(getenv("TPM2TSSENGINE_TCTI"));
+    if (getenv("TPM2TSSENGINE_TCTI")) {
+        tcti_nameconf = OPENSSL_strdup(getenv("TPM2TSSENGINE_TCTI"));
+    }
 #endif
 
     rc = init_rand(e);
