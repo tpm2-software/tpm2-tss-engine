@@ -34,6 +34,7 @@
 #include <inttypes.h>
 #include <getopt.h>
 
+#include <openssl/conf.h>
 #include <openssl/engine.h>
 #include <openssl/pem.h>
 
@@ -302,6 +303,12 @@ main(int argc, char **argv)
         exit(1);
 
     TPM2_DATA *tpm2Data = NULL;
+
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+    OPENSSL_config(NULL);
+#else
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, NULL);
+#endif
 
     /* Initialize the tpm2-tss engine */
     ENGINE_load_dynamic();

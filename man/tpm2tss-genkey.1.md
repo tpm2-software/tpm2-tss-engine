@@ -15,6 +15,9 @@
 tpm2tss software stack. Those keys may be an RSA key for decryption or signing
 or an ECC key for ECDSA signatures.
 
+The tool respects the OPENSSL_CONF option for specifying engine specific control
+parameters. See `man(5) config` for details on openssl config files.
+
 # ARGUMENTS
 
 The `tpm2tss-genkey` command expects a filename for storing the resulting TPM
@@ -37,6 +40,7 @@ key information. This file can then be loaded with OpenSSL using
 
   * `-o <password>`, `--ownerpw <password>`:
     Password for the owner hierarchy (default: none)
+    Openssl Config control command: `SET_OWNERAUTH`
 
   * `-p <password>`, `--password <password>`:
     Password for the created key (default: none)
@@ -52,6 +56,7 @@ key information. This file can then be loaded with OpenSSL using
 
   * `-W <password>`, `--parentpw <password>`:
     Password for the parent key (default: none)
+    Openssl Config control command: `SET_PARENTAUTH`
 
 # EXAMPLES
 
