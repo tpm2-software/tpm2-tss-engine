@@ -65,12 +65,7 @@ LT_INIT()
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
 
-AC_ARG_ENABLE([debug],
-            [AS_HELP_STRING([--enable-debug],
-                            [build with debug output])],,
-            [enable_debug=no])
-AS_IF([test "x$enable_debug" != "xno"],
-      AC_DEFINE_UNQUOTED([DEBUG], [1], ["Debug output enabled"]))
+AX_CHECK_ENABLE_DEBUG([info])
 
 AC_ARG_ENABLE([tctienvvar],
     [AS_HELP_STRING([--disable-tctienvvar],
