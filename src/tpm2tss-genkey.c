@@ -61,9 +61,10 @@ char *help =
     "    -s, --keysize   key size in bits for rsa (default: 2048)\n"
     "    -v, --verbose   print verbose messages\n"
     "    -W, --parentpw  password for the parent key (default: none)\n"
-    "\n";
+    "    -t, --tcti      tcti configuration string (default: none)\n"
+		"\n";
 
-static const char *optstr = "a:c:e:ho:p:P:s:vW:";
+static const char *optstr = "a:c:e:ho:p:P:s:vW:t:";
 
 static const struct option long_options[] = {
     {"alg",      required_argument, 0, 'a'},
@@ -76,6 +77,7 @@ static const struct option long_options[] = {
     {"keysize",  required_argument, 0, 's'},
     {"verbose",  no_argument,       0, 'v'},
     {"parentpw", required_argument, 0, 'W'},
+    {"tcti",     required_argument, 0, 't'},
     {0,          0,                 0,  0 }
 };
 
@@ -90,6 +92,7 @@ static struct opt {
     char *parentpw;
     int keysize;
     int verbose;
+    char *tcti_conf;
 } opt;
 
 /** Parse and set command line options.
@@ -115,6 +118,7 @@ parse_opts(int argc, char **argv)
     opt.parentpw = NULL;
     opt.keysize = 2048;
     opt.verbose = 0;
+    opt.tcti_conf = NULL;
 
     /* parse the options */
     int c;
@@ -178,6 +182,9 @@ parse_opts(int argc, char **argv)
                 ERR("Error parsing keysize.\n");
                 exit(1);
             }
+            break;
+        case 't':
+            opt.tcti_conf = optarg;
             break;
         default:
             ERR("Unknown option at index %i.\n\n", opt_idx);
@@ -336,6 +343,12 @@ main(int argc, char **argv)
 
     if (opt.parentpw &&
             !ENGINE_ctrl(tpm_engine, TPM2TSS_SET_PARENTAUTH, 0, opt.parentpw, NULL)) {
+        ERR("Could not set parentauth\n");
+        return 1;
+    }
+
+    if (opt.tcti_conf &&
+            !ENGINE_ctrl(tpm_engine, TPM2TSS_SET_TCTI, 0, opt.tcti_conf, NULL)) {
         ERR("Could not set parentauth\n");
         return 1;
     }

@@ -58,6 +58,10 @@ key information. This file can then be loaded with OpenSSL using
     Password for the parent key (default: none)
     Openssl Config control command: `SET_PARENTAUTH`
 
+  * `-t <tcti-conf>`, `--tcti <tcti-conf>`:
+    TCTI Configuration string (default: none)
+    Openssl Config control command: `SET_TCTI`
+
 # EXAMPLES
 
 Engine informations can be retrieved using:
