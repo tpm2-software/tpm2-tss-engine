@@ -334,7 +334,8 @@ main(int argc, char **argv)
         return 1;
     }
 
-    if (!ENGINE_ctrl(tpm_engine, TPM2TSS_SET_PARENTAUTH, 0, opt.parentpw, NULL)) {
+    if (opt.parentpw &&
+            !ENGINE_ctrl(tpm_engine, TPM2TSS_SET_PARENTAUTH, 0, opt.parentpw, NULL)) {
         ERR("Could not set parentauth\n");
         return 1;
     }
