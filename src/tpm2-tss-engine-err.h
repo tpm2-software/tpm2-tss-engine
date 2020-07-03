@@ -33,7 +33,7 @@
 
 #include <stdint.h>
 
-#ifdef DEBUG
+#ifndef NDEBUG
 #define DBG(...) fprintf(stderr, __VA_ARGS__)
 #define DBGBUF(...) printbuf(__VA_ARGS__)
 void printbuf(const uint8_t *b, size_t s);
