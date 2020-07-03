@@ -57,7 +57,7 @@ key information. This file can then be loaded with OpenSSL using
 
 Engine informations can be retrieved using:
 ```
-$ openssl engine -t -c tpm2
+$ openssl engine -t -c tpm2tss
 ```
 The following sequence of commands creates an RSA key using the TPM, exports the
 public key, encrypts a data file and decrypts it using the TPM:
