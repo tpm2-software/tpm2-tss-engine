@@ -328,7 +328,8 @@ main(int argc, char **argv)
     if (!init_res)
         return 1;
 
-    if (!ENGINE_ctrl(tpm_engine, TPM2TSS_SET_OWNERAUTH, 0, opt.ownerpw, NULL)) {
+    if (opt.ownerpw &&
+            !ENGINE_ctrl(tpm_engine, TPM2TSS_SET_OWNERAUTH, 0, opt.ownerpw, NULL)) {
         ERR("Could not set ownerauth\n");
         return 1;
     }
