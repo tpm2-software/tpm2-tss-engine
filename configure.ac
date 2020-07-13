@@ -57,6 +57,8 @@ AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Wno-portability])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])]) 
 AM_MAINTAINER_MODE([enable])
 
+AX_CHECK_ENABLE_DEBUG([info])
+
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
@@ -65,13 +67,14 @@ LT_INIT()
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
 
-AX_CHECK_ENABLE_DEBUG([info])
+AC_CONFIG_HEADERS([src/config.h])
 
 AC_ARG_ENABLE([tctienvvar],
     [AS_HELP_STRING([--disable-tctienvvar],
                     [Disable setting the TCTI option from an environment variable])],,
     [enable_tctienvvar=yes])
-AS_IF([test "x$enable_tctienvvar" = xyes], [AC_DEFINE([ENABLE_TCTIENVVAR], [1])])
+AS_IF([test "x$enable_tctienvvar" = xyes], [AC_DEFINE([ENABLE_TCTIENVVAR], [1],
+      'Enable getting TCTI from env variable')])
 
 AC_CONFIG_FILES([Makefile])
 

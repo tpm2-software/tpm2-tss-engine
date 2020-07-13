@@ -42,3 +42,4 @@ man/*.7
 *~
 test/error_tpm2-tss-engine-common
 test/*.o
+config.h.in

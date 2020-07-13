@@ -31,6 +31,8 @@
 #ifndef TPM2_TSS_ENGINE_ERR_H
 #define TPM2_TSS_ENGINE_ERR_H
 
+#include "config.h"
+
 #include <stdint.h>
 
 #ifndef NDEBUG
