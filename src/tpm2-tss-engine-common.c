@@ -171,7 +171,11 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
     }
 
     tpk->emptyAuth = ! !tpm2Data->emptyAuth;
-    ASN1_INTEGER_set(tpk->parent, tpm2Data->parent);
+    if (tpm2Data->parent != 0) {
+        ASN1_INTEGER_set(tpk->parent, tpm2Data->parent);
+    } else {
+        ASN1_INTEGER_set(tpk->parent, TPM2_RH_OWNER);
+    }
     ASN1_STRING_set(tpk->privkey, &privbuf[0], privbuf_len);
     ASN1_STRING_set(tpk->pubkey, &pubbuf[0], pubbuf_len);
 
