@@ -209,12 +209,11 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     ESYS_CONTEXT *esys_ctx = NULL;
     TPM2B_PUBLIC *outPublic;
 
-    tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
+    tpm2Data = OPENSSL_zalloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
         ERR(tpm2tss_tpm2data_readtpm, ERR_R_MALLOC_FAILURE);
         goto error;
     }
-    memset(tpm2Data, 0, sizeof(*tpm2Data));
 
     tpm2Data->privatetype = KEY_TYPE_HANDLE;
     tpm2Data->handle = handle;
@@ -355,12 +354,11 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
     BIO_free(bio);
     bio = NULL;
 
-    tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
+    tpm2Data = OPENSSL_zalloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
         ERR(tpm2tss_tpm2data_read, ERR_R_MALLOC_FAILURE);
         goto error;
     }
-    memset(tpm2Data, 0, sizeof(*tpm2Data));
 
     tpm2Data->privatetype = KEY_TYPE_BLOB;
 
