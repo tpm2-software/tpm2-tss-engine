@@ -9,8 +9,9 @@
 * C library development libraries and header files
 * pkg-config
 * OpenSSL >= 1.0.2
-* tpm2-tss >= 2.2.2
+* tpm2-tss >= 3.1.0-dev
 * pandoc
+* doxygen
 
 Integration tests also require:
 * expect
@@ -31,9 +32,10 @@ sudo apt -y install \
   gcc \
   pkg-config \
   libssl-dev \
-  pandoc
+  pandoc \
+  doxygen
 
-git clone -b 2.2.x --depth=1 http://www.github.com/tpm2-software/tpm2-tss
+git clone --depth=1 http://www.github.com/tpm2-software/tpm2-tss
 cd tpm2-tss
 ./bootstrap
 ./configure
@@ -64,6 +66,7 @@ sudo cp ibmtpm/src/tpm_server /usr/local/bin
 
 # Building from source
 ```
+git clone --depth=1 http://www.github.com/tpm2-software/tpm2-tss-engine
 ./bootstrap
 ./configure
 make -j$(nproc)
