@@ -9,7 +9,7 @@
 * C library development libraries and header files
 * pkg-config
 * OpenSSL >= 1.0.2
-* tpm2-tss >= 3.1.0-dev
+* tpm2-tss >= 2.4.x
 * pandoc
 * doxygen
 
