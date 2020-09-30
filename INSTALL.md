@@ -16,7 +16,7 @@
 Integration tests also require:
 * expect
 * tpm2-tools 4.0 (or 4.X branch)
-* tpm_server
+* [swtpm](https://github.com/stefanberger/swtpm) or [tpm_server](https://sourceforge.net/projects/ibmswtpm2/)
 * realpath
 * ss
 
