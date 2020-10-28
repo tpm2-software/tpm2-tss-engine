@@ -55,6 +55,8 @@ char *help =
     "    -c, --curve     curve for ecc (default: nist_p256)\n"
     "    -e, --exponent  exponent for rsa (default: 65537)\n"
     "    -h, --help      print help\n"
+    "    -u, --public    import a key and read its public portion from this file\n"
+    "    -r, --private   import the sensitive key portion from this file\n"
     "    -o, --ownerpw   password for the owner hierarchy (default: none)\n"
     "    -p, --password  password for the created key (default: none)\n"
     "    -P, --parent    specific handle for the parent key (default: none)\n"
@@ -62,15 +64,17 @@ char *help =
     "    -v, --verbose   print verbose messages\n"
     "    -W, --parentpw  password for the parent key (default: none)\n"
     "    -t, --tcti      tcti configuration string (default: none)\n"
-		"\n";
+    "\n";
 
-static const char *optstr = "a:c:e:ho:p:P:s:vW:t:";
+static const char *optstr = "a:c:e:hu:r:o:p:P:s:vW:t:";
 
 static const struct option long_options[] = {
     {"alg",      required_argument, 0, 'a'},
     {"curve",    required_argument, 0, 'c'},
     {"exponent", required_argument, 0, 'e'},
     {"help",     no_argument,       0, 'h'},
+    {"public",   required_argument, 0, 'u'},
+    {"private",  required_argument, 0, 'r'},
     {"ownerpw",  required_argument, 0, 'o'},
     {"password", required_argument, 0, 'p'},
     {"parent",   required_argument, 0, 'P'},
@@ -86,6 +90,8 @@ static struct opt {
     TPMI_ALG_PUBLIC alg;
     TPMI_ECC_CURVE curve;
     int exponent;
+    char *importpub;
+    char *importtpm;
     char *ownerpw;
     char *password;
     TPM2_HANDLE parent;
@@ -112,6 +118,8 @@ parse_opts(int argc, char **argv)
     opt.alg = TPM2_ALG_RSA;
     opt.curve = TPM2_ECC_NIST_P256;
     opt.exponent = 65537;
+    opt.importpub = NULL;
+    opt.importtpm = NULL;
     opt.ownerpw = NULL;
     opt.password = NULL;
     opt.parent = 0;
@@ -160,6 +168,12 @@ parse_opts(int argc, char **argv)
                 exit(1);
             }
             break;
+        case 'u':
+            opt.importpub = optarg;
+            break;
+        case 'r':
+            opt.importtpm = optarg;
+            break;
         case 'o':
             opt.ownerpw = optarg;
             break;
@@ -207,6 +221,12 @@ parse_opts(int argc, char **argv)
         ERR("%s", help);
         exit(1);
     }
+
+    if (!!opt.importpub != !!opt.importtpm) {
+        ERR("Import requires both --public and --private\n");
+        return 1;
+    }
+
     return 0;
 }
 
@@ -309,6 +329,7 @@ main(int argc, char **argv)
     if (parse_opts(argc, argv) != 0)
         exit(1);
 
+    int r;
     TPM2_DATA *tpm2Data = NULL;
 
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
@@ -353,13 +374,19 @@ main(int argc, char **argv)
         return 1;
     }
 
-    /* Generate the key */
-    VERB("Generating the key\n");
-    switch (opt.alg) {
+    if (opt.importpub && opt.importtpm) {
+        VERB("Importing the TPM key\n");
+        r = tpm2tss_tpm2data_importtpm(opt.importpub, opt.importtpm, opt.parent,
+                                       opt.password == NULL, &tpm2Data);
+        if (r != 1)
+            return 1;
+    } else switch (opt.alg) {
     case TPM2_ALG_RSA:
+        VERB("Generating the rsa key\n");
         tpm2Data = genkey_rsa();
         break;
     case TPM2_ALG_ECDSA:
+        VERB("Generating the ecdsa key\n");
         tpm2Data = genkey_ecdsa();
         break;
     default:
