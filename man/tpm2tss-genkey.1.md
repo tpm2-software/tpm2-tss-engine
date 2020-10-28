@@ -1,6 +1,6 @@
 % tpm2tss-genkey(1) tpm2-tss-engine | General Commands Manual
 %
-% JUNE 2018
+% OCTOBER 2020
 
 # NAME
 **tpm2tss-genkey**(1) -- generate TPM keys for tpm2-tss-engine
@@ -31,6 +31,13 @@ key information. This file can then be loaded with OpenSSL using
 
   * `-c <curve>`, `--curve <curve>`:
     If alg ecdsa is chosen, the curve for ecc (default: nist_p256)
+
+  * `-u <file>`, `--public <file>`:
+    Public key (TPM2B_PUBLIC) to be imported. Requires `-r`.
+
+  * `-r <file>`, `--private <file>`:
+    The (encrypted) private key (TPM2B_PRIVATE) to be imported.
+    Requires `-u`.
 
   * `-e <exponent>`, `--exponent <exponent>`:
     If alg rsa is chosen, the exponent for rsa (default: 65537)
