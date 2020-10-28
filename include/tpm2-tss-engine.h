@@ -68,6 +68,11 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap);
 int
 tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap);
 
+int
+tpm2tss_tpm2data_importtpm(const char *filenamepub, const char *filenametpm,
+                           TPM2_HANDLE parent, int emptyAuth,
+                           TPM2_DATA **tpm2Datap);
+
 EVP_PKEY *
 tpm2tss_rsa_makekey(TPM2_DATA *tpm2Data);
 
