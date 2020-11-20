@@ -4,18 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0-rc1] - 2020-07-20
+## [1.1.0] - 2020-11-20
 ### Added
 - Configure option for ptpm tests
 - Configure script AX_CHECK_ENABLE_DEBUG
 - Option for setting tcti on executable
-
-### Changed
-- Fix manpages for -P/--parent option and correct engine name
-- Fix TCTI env variable handling
-
-## [1.1.0-rc0] - 2020-01-10
-### Added
 - TCTI-env variable used by default
 - Support for parent key passwords
 - openssl.cnf sample file
@@ -30,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix EC param info (using named curve format)
 - Use tpm2-tools 4.X stable branch for integration tests
 - Use libtss2-tctildr.so instead of custom code for tcti setup
+- Fix manpages for -P/--parent option and correct engine name
+- Fix TCTI env variable handling
+- Set parent handle to OWNER
 
 ## [1.0.0] - 2019-04-04
 ### Added
