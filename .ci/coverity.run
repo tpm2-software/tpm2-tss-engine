@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: BSD-2
+
+>&2 echo "ERROR: Automatic Coverity Scanning not set-up for this project"
+exit 1
