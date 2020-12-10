@@ -7,7 +7,7 @@ jobs:
     if: "!contains(github.ref, 'coverity_scan')"
     strategy:
       matrix:
-        DOCKER_IMAGE: ["ubuntu-18.04"]
+        DOCKER_IMAGE: ["ubuntu-18.04", "ubuntu-20.04", "fedora-32", "opensuse-leap" ]
         TPM2TSS_BRANCH: ["3.0.x"]
         TPM2TOOLS_BRANCH: ["4.0"]
         CC: ["gcc", "clang"]
