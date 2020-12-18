@@ -1,4 +1,4 @@
-[![Linux Build Status](https://travis-ci.org/tpm2-software/tpm2-tss-engine.svg?branch=master)](https://travis-ci.org/tpm2-software/tpm2-tss-engine)
+[![Linux Build Status](https://github.com/tpm2-software/tpm2-tss-engine/workflows/Linux%20Build%20Status/badge.svg)](https://github.com/tpm2-software/tpm2-tss-engine/actions)
 [![Code Coverage](https://codecov.io/gh/tpm2-software/tpm2-tss-engine/branch/master/graph/badge.svg)](https://codecov.io/gh/tpm2-software/tpm2-tss-engine)
 [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/tpm2-software/tpm2-tss-engine.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/tpm2-software/tpm2-tss-engine/context:cpp)
 
