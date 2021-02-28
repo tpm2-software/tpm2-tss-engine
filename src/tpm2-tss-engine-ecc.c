@@ -414,7 +414,11 @@ tpm2tss_ecc_makekey(TPM2_DATA *tpm2Data)
  * @retval NULL on failure.
  */
 TPM2_DATA *
+#if OPENSSL_VERSION_NUMBER < 0x10100000
 tpm2tss_ecc_getappdata(EC_KEY *key)
+#else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+tpm2tss_ecc_getappdata(const EC_KEY *key)
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 {
     if (ec_key_app_data == -1) {
         DBG("Module uninitialized\n");
