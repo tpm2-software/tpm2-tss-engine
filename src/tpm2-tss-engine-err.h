@@ -86,6 +86,8 @@ void ERR_error(int function, int reason, const char *file, int line);
 #define TPM2TSS_F_populate_ecc          121
 #define TPM2TSS_F_tpm2tss_ecc_genkey    122
 #define TPM2TSS_F_tpm2tss_ecc_makekey      123
+#define TPM2TSS_F_ecdh_compute_key      124
+
 /* tpm2-tss-engine-rand.c */
 #define TPM2TSS_F_rand_bytes    130
 /* tpm2-tss-engine-rsa.c */
