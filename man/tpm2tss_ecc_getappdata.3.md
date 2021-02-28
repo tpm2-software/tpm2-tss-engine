@@ -9,7 +9,7 @@
 
 **#include <tpm2tss.h>**
 
-**TPM2_DATA * tpm2tss_ecc_getappdata(EC_KEY *key);**
+**TPM2_DATA * tpm2tss_ecc_getappdata(const EC_KEY *key);**
 
 **int tpm2tss_ecc_setappdata(EC_KEY *key, TPM2_DATA *data);**
 
