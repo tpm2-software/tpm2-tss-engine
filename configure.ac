@@ -117,6 +117,9 @@ PKG_CHECK_MODULES([CRYPTO], [libcrypto >= 1.0.2g],
 PKG_CHECK_MODULES([TSS2_ESYS], [tss2-esys >= 2.3])
 PKG_CHECK_MODULES([TSS2_MU], [tss2-mu])
 PKG_CHECK_MODULES([TSS2_TCTILDR], [tss2-tctildr])
+AC_CHECK_LIB([crypto], EC_KEY_METHOD_set_compute_key,
+      [AM_CONDITIONAL([HAVE_OPENSSL_ECDH], true)],
+      [AM_CONDITIONAL([HAVE_OPENSSL_ECDH], false)])
 
 AC_PATH_PROG([PANDOC], [pandoc])
 AS_IF([test -z "$PANDOC"],

@@ -127,6 +127,9 @@ TESTS_SHELL = test/ecdsa.sh \
               test/rsasign_persistent_emptyauth.sh \
               test/sserver.sh \
               test/sclient.sh
+if HAVE_OPENSSL_ECDH
+TESTS_SHELL += test/ecdh.sh
+endif
 EXTRA_DIST += $(TESTS_SHELL)
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER = $(srcdir)/test/sh_log_compiler.sh
