@@ -84,7 +84,7 @@ AC_ARG_ENABLE([defaultflags],
               [enable_defaultflags=yes])
 AS_IF([test "x$enable_defaultflags" = "xyes"],
       [
-      AX_ADD_COMPILER_FLAG([-std=c99])
+      AX_ADD_COMPILER_FLAG([-std=gnu99])
       AX_ADD_COMPILER_FLAG([-Wall])
       AX_ADD_COMPILER_FLAG([-Wextra])
       AX_ADD_COMPILER_FLAG([-Wformat-security])
