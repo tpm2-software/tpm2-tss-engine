@@ -32,6 +32,7 @@
 #include <string.h>
 #include <strings.h>
 #include <inttypes.h>
+#include <unistd.h>
 #include <getopt.h>
 
 #include <openssl/conf.h>
