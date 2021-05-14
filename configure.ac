@@ -57,6 +57,7 @@ AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Wno-portability])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])]) 
 AM_MAINTAINER_MODE([enable])
 
+AX_IS_RELEASE([dash-version])
 AX_CHECK_ENABLE_DEBUG([info])
 
 AC_PROG_CC
@@ -88,7 +89,7 @@ AS_IF([test "x$enable_defaultflags" = "xyes"],
       AX_ADD_COMPILER_FLAG([-Wall])
       AX_ADD_COMPILER_FLAG([-Wextra])
       AX_ADD_COMPILER_FLAG([-Wformat-security])
-      AX_ADD_COMPILER_FLAG([-Werror])
+      AS_IF([test "x$ax_is_release" = "xno"], [AX_ADD_COMPILER_FLAG([-Werror])])
       AX_ADD_COMPILER_FLAG([-fstack-protector-all])
       AX_ADD_COMPILER_FLAG([-fpic])
       AX_ADD_COMPILER_FLAG([-fPIC])
