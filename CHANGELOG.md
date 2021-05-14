@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [next] - next
 ### Added
 - The ability to import key blobs from things like the tpm2-tools project.
+- Fix QNX build issues.
+- Only set -Werror for non-release builds.
 
 ## [1.1.0-rc1] - 2020-07-20
 ### Added
