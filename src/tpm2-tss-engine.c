@@ -240,6 +240,7 @@ loadkey(ENGINE *e, const char *key_id, UI_METHOD *ui, void *cb_data)
 
     DBG("TPM2 Key loaded\n");
 
+    OPENSSL_free(tpm2Data);
     return pkey;
 error:
     if (tpm2Data)
