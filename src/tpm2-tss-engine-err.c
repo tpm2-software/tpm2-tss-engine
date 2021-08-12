@@ -160,6 +160,9 @@ ERR_unload_TPM2TSS_strings(void)
 void
 ERR_error(int function, int reason, const char *file, int line)
 {
+    (void)(function);
+    (void)(file);
+    (void)(line);
     if (TPM2TSS_lib_error_code == 0)
         TPM2TSS_lib_error_code = ERR_get_next_error_library();
     ERR_PUT_error(TPM2TSS_lib_error_code, function, reason, file, line);
