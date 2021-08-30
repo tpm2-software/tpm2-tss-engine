@@ -8,7 +8,7 @@
 The tpm2-tss-engine project implements a cryptographic engine for
 [OpenSSL](https://www.openssl.org) for
 [Trusted Platform Module (TPM 2.0)](https://trustedcomputinggroup.org/work-groups/trusted-platform-module/)
-using the [tpm2-tss](https://www.github.org/tpm2-software/tpm2-tss) software
+using the [tpm2-tss](https://www.github.com/tpm2-software/tpm2-tss) software
 stack that follows the Trusted Computing Groups (TCG) 
 [TPM Software Stack (TSS 2.0)](https://trustedcomputinggroup.org/work-groups/software-stack/).
 It uses the 
