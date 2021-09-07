@@ -132,18 +132,24 @@ TESTS_SHELL = test/ecdsa.sh \
 if HAVE_OPENSSL_ECDH
 TESTS_SHELL += test/ecdh.sh
 endif
-EXTRA_DIST += $(TESTS_SHELL)
+EXTRA_DIST += $(TESTS_SHELL) test/neg-handle.pem
 TEST_EXTENSIONS = .sh
 SH_LOG_COMPILER = $(srcdir)/test/sh_log_compiler.sh
 SH_LOG_FLAGS = $(INTEGRATION_ARGS)
 EXTRA_DIST += $(SH_LOG_COMPILER)
 
 if UNIT
-TESTS_UNIT += test/error_tpm2-tss-engine-common
+TESTS_UNIT += test/error_tpm2-tss-engine-common test/tpm2-tss-engine-common
 test_error_tpm2_tss_engine_common_CFLAGS =  $(AM_CFLAGS) $(CMOCKA_CFLAGS)
 test_error_tpm2_tss_engine_common_LDADD =   $(AM_LDADD) $(CMOCKA_LIBS)
 test_error_tpm2_tss_engine_common_LDFLAGS = $(AM_LDFLAGS) -Wl,--wrap=Esys_Initialize
 test_error_tpm2_tss_engine_common_SOURCES = test/error_tpm2-tss-engine-common.c \
+                                            $(libtpm2tss_la_SOURCES)
+test_tpm2_tss_engine_common_CFLAGS =  $(AM_CFLAGS) $(CMOCKA_CFLAGS) \
+                                            -DNEG_HANDLE_PEM=\"$(top_srcdir)/test/neg-handle.pem\"
+test_tpm2_tss_engine_common_LDADD =   $(AM_LDADD) $(CMOCKA_LIBS)
+test_tpm2_tss_engine_common_LDFLAGS = $(AM_LDFLAGS)
+test_tpm2_tss_engine_common_SOURCES = test/tpm2-tss-engine-common.c \
                                             $(libtpm2tss_la_SOURCES)
 endif #UNIT
 

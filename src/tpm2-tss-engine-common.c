@@ -132,6 +132,7 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
     TSS2_RC r;
     BIO *bio = NULL;
     TSSPRIVKEY *tpk = NULL;
+    BIGNUM *bn_parent = NULL;
 
     uint8_t privbuf[sizeof(tpm2Data->priv)];
     uint8_t pubbuf[sizeof(tpm2Data->pub)];
@@ -171,11 +172,16 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
     }
 
     tpk->emptyAuth = tpm2Data->emptyAuth ? 0xFF : 0;
-    if (tpm2Data->parent != 0) {
-        ASN1_INTEGER_set(tpk->parent, tpm2Data->parent);
-    } else {
-        ASN1_INTEGER_set(tpk->parent, TPM2_RH_OWNER);
+    bn_parent = BN_new();
+    if (!bn_parent) {
+        goto error;
     }
+    if (tpm2Data->parent != 0) {
+        BN_set_word(bn_parent, tpm2Data->parent);
+    } else {
+        BN_set_word(bn_parent, TPM2_RH_OWNER);
+    }
+    BN_to_ASN1_INTEGER(bn_parent, tpk->parent);
     ASN1_STRING_set(tpk->privkey, &privbuf[0], privbuf_len);
     ASN1_STRING_set(tpk->pubkey, &pubbuf[0], pubbuf_len);
 
@@ -341,6 +347,7 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
     TSSPRIVKEY *tpk = NULL;
     TPM2_DATA *tpm2Data = NULL;
     char type_oid[64];
+    BIGNUM *bn_parent;
 
     if ((bio = BIO_new_file(filename, "r")) == NULL) {
         ERR(tpm2tss_tpm2data_read, TPM2TSS_R_FILE_READ);
@@ -366,7 +373,15 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
 
     tpm2Data->emptyAuth = !!tpk->emptyAuth;
 
-    tpm2Data->parent = ASN1_INTEGER_get(tpk->parent);
+    bn_parent = ASN1_INTEGER_to_BN(tpk->parent, NULL);
+    if (!bn_parent) {
+        goto error;
+    }
+    if (BN_is_negative(bn_parent)) {
+        tpm2Data->parent = ASN1_INTEGER_get(tpk->parent);
+    } else {
+        tpm2Data->parent = BN_get_word(bn_parent);
+    }
     if (tpm2Data->parent == 0)
         tpm2Data->parent = TPM2_RH_OWNER;
 
