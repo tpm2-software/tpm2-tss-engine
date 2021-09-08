@@ -36,7 +36,8 @@ if [ -z "$INTEGRATION_DEVICE" ]; then
         case "$simulator_binary" in
             *swtpm) "$simulator_binary" socket --tpm2 --server port="$simulator_port" \
                                                --ctrl type=tcp,port="$(( simulator_port + 1 ))" \
-                                               --flags not-need-init --tpmstate dir="$tmp_dir" &;;
+                                               --flags not-need-init --tpmstate dir="$tmp_dir" \
+					       --seccomp "action=none" &;;
             *tpm_server) "$simulator_binary" -port "$simulator_port" &;;
         esac
         simulator_pid="$!"
