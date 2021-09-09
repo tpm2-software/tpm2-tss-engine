@@ -71,7 +71,7 @@ key information. This file can then be loaded with OpenSSL using
 
 # EXAMPLES
 
-Engine informations can be retrieved using:
+Engine information can be retrieved using:
 ```
 $ openssl engine -t -c tpm2tss
 ```
