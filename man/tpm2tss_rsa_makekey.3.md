@@ -1,4 +1,4 @@
-% tpm2tss-tpm2data_write(1) tpm2-tss-engine | Library calls
+% tpm2tss-tpm2data_write(3) tpm2-tss-engine | Library calls
 %
 % JUNE 2018
 
