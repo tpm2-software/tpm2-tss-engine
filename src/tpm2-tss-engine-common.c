@@ -170,7 +170,7 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
         goto error;
     }
 
-    tpk->emptyAuth = ! !tpm2Data->emptyAuth;
+    tpk->emptyAuth = tpm2Data->emptyAuth ? 0xFF : 0;
     if (tpm2Data->parent != 0) {
         ASN1_INTEGER_set(tpk->parent, tpm2Data->parent);
     } else {
@@ -364,7 +364,7 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
 
     tpm2Data->privatetype = KEY_TYPE_BLOB;
 
-    tpm2Data->emptyAuth = tpk->emptyAuth;
+    tpm2Data->emptyAuth = !!tpk->emptyAuth;
 
     tpm2Data->parent = ASN1_INTEGER_get(tpk->parent);
     if (tpm2Data->parent == 0)
