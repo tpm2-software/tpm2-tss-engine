@@ -482,6 +482,24 @@ init_tpm_parent(ESYS_CONTEXT **esys_ctx,
         }
     }
 
+    /*
+     * TPM2_ALG_ECC is *mandatory* for TPM2.0; the above should never
+     * fail. However, *if* such a broken TPM is used then ephemeral
+     * primaries according to the TSS2 PEM file standard can *never*
+     * have worked on that hardware, so it isn't *breaking* anything
+     * for us to unilaterally use an ephemeral RSA parent in this case
+     * instead.
+     *
+     * However, it may not be interoperable to do so, and it isn't a
+     * good idea anyway since RSA keys are *slow* to generate, so
+     * users with a broken TPM like this really *should* have followed
+     * the recommendation to create the RSA primary and store it in
+     * the NVRAM at 0x81000001. And then the TSS2 PEM keys should use
+     * *that* as the parent, not the ephemeral version. In fact, there
+     * is a strong case to be made for defaulting to 0x81000001 if it
+     * exists, *before* (or never) falling back to generating an RSA
+     * key here.
+     */
     if (primaryTemplate == NULL) {
         for (index = 0; index < capabilityData->data.algorithms.count; index++) {
             if (capabilityData->data.algorithms.algProperties[index].alg == TPM2_ALG_RSA) {
