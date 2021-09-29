@@ -99,6 +99,14 @@ TSS2_RC init_tpm_key (  ESYS_CONTEXT **esys_ctx,
      } \
 }
 
+/*
+ * The parameters of this key can never be changed because they are
+ * part of the interoperable 'standard' form for TSS2 PEM keys.
+ * Where the parent key is ephemeral and generated on demand, it
+ * has to be generated precisely the *same* every time or it cannot
+ * work. The ECC primary is used for *all* keys regardless of their
+ * type.
+ */
 #define TPM2B_PUBLIC_PRIMARY_ECC_TEMPLATE { \
     .publicArea = { \
         .type = TPM2_ALG_ECC, \
