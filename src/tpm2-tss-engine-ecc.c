@@ -442,8 +442,10 @@ populate_ecc(EC_KEY *key)
 /** Helper to load an ECC key from a tpm2Data
  *
  * This function creates a key object given a TPM2_DATA object. The resulting
- * key object can then be used for signing with the tpm2tss engine.
- * @param tpm2Data The key data to use.
+ * key object can then be used for signing with the tpm2tss engine. Ownership
+ * of the TPM2_DATA object is taken on success.
+ * @param tpm2Data The key data to use. Must have been allocated using
+ * OPENSSL_malloc.
  * @retval key The key object
  * @retval NULL on failure.
  */
@@ -549,6 +551,24 @@ tpm2tss_ecc_setappdata(EC_KEY *key, TPM2_DATA *tpm2Data)
 #else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
     return EC_KEY_set_ex_data(key, ec_key_app_data, tpm2Data);
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+}
+
+static void
+free_ecc_appdata(void *parent, void *ptr, CRYPTO_EX_DATA *ad, int idx,
+                 long argl, void *argp)
+{
+    TPM2_DATA *tpm2Data = ptr;
+
+    (void)parent;
+    (void)ad;
+    (void)idx;
+    (void)argl;
+    (void)argp;
+
+    if (!ptr)
+        return;
+
+    OPENSSL_free(tpm2Data);
 }
 
 /** Generate a tpm2tss ecc key object.
@@ -679,7 +699,8 @@ init_ecc(ENGINE *e)
     ECDSA_METHOD_set_sign(ecc_methods, ecdsa_sign);
 
     if (ec_key_app_data == -1)
-        ec_key_app_data = ECDSA_get_ex_new_index(0, NULL, NULL, NULL, NULL);
+        ec_key_app_data = ECDSA_get_ex_new_index(0, NULL, NULL, NULL,
+                                                 free_ecc_appdata);
 #else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
     ecc_method_default = EC_KEY_OpenSSL();
     if (ecc_method_default == NULL)
@@ -697,7 +718,8 @@ init_ecc(ENGINE *e)
     EC_KEY_METHOD_set_compute_key(ecc_methods, ecdh_compute_key);
 
     if (ec_key_app_data == -1)
-        ec_key_app_data = EC_KEY_get_ex_new_index(0, NULL, NULL, NULL, NULL);
+        ec_key_app_data = EC_KEY_get_ex_new_index(0, NULL, NULL, NULL,
+                                                  free_ecc_appdata);
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
     return 1;
