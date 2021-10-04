@@ -278,6 +278,22 @@ rsa_priv_dec(int flen, const unsigned char *from, unsigned char *to, RSA * rsa,
     return (r == TSS2_RC_SUCCESS) ? flen : 0;
 }
 
+/** Clean up the RSA key
+ *
+ * @param rsa The rsa key object.
+ * @retval 1 on success, or 0 on failure
+ */
+static int
+rsa_finish(RSA *rsa)
+{
+    TPM2_DATA *tpm2Data = RSA_get_app_data(rsa);
+
+    if (tpm2Data != NULL)
+        OPENSSL_free(tpm2Data);
+
+    return 1;
+}
+
 /** Helper to populate the RSA key object.
  *
  * In order to use an RSA key object in a typical manner, all fields of the
@@ -415,8 +431,9 @@ populate_rsa(RSA *rsa)
  *
  * This function creates a key object given a TPM2_DATA object. The resulting
  * key object can then be used for signing and decrypting with the tpm2tss
- * engine.
- * @param tpm2Data The key data to use.
+ * engine. Ownership of the TPM2_DATA object is taken on success.
+ * @param tpm2Data The key data to use. Must have been allocated using
+ * OPENSSL_malloc.
  * @retval key The key object
  * @retval NULL on failure.
  */
@@ -456,8 +473,10 @@ tpm2tss_rsa_makekey(TPM2_DATA *tpm2Data)
         goto error;
     }
 
-    if (!populate_rsa(rsa))
+    if (!populate_rsa(rsa)) {
+        RSA_set_app_data(rsa, NULL);
         goto error;
+    }
 
     DBG("Created RSA key object.\n");
 
@@ -558,6 +577,8 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
     goto end;
  error:
     r = -1;
+    if (rsa)
+        RSA_set_app_data(rsa, NULL);
     if (tpm2Data)
         OPENSSL_free(tpm2Data);
 
@@ -622,6 +643,7 @@ init_rsa(ENGINE *e)
     RSA_meth_set1_name(rsa_methods, "TPM2TSS RSA methods");
     RSA_meth_set_priv_enc(rsa_methods, rsa_priv_enc);
     RSA_meth_set_priv_dec(rsa_methods, rsa_priv_dec);
+    RSA_meth_set_finish(rsa_methods, rsa_finish);
 
     return ENGINE_set_RSA(e, rsa_methods);
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
