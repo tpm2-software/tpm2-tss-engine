@@ -131,15 +131,28 @@ init_tpm_public_point(TPM2B_ECC_POINT *point, const EC_POINT *ec_point,
                         const EC_GROUP *ec_group)
 {
     unsigned char buffer[1 + sizeof(point->point.x.buffer)
-                           + sizeof(point->point.y.buffer)];
+                           + sizeof(point->point.y.buffer)] = {0};
+
     BN_CTX *ctx = BN_CTX_new();
     if (!ctx)
         return 0;
 
     BN_CTX_start(ctx);
-    size_t len = EC_POINT_point2oct(ec_group, ec_point,
+
+    size_t len = 0;
+
+    // first, check for actual buffer size required
+    if ((len = EC_POINT_point2oct(ec_group, ec_point, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, ctx)) <= sizeof(buffer)) {
+        len = EC_POINT_point2oct(ec_group, ec_point,
                     POINT_CONVERSION_UNCOMPRESSED, buffer, sizeof(buffer), ctx);
+    }
+
+    BN_CTX_end(ctx);
     BN_CTX_free(ctx);
+
+    if (len == 0 || len > sizeof(buffer))
+        return 0;
+
     len = (len - 1) / 2;
 
     point->point.x.size = len;
@@ -309,7 +322,7 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
         ERR(ecdsa_sign, TPM2TSS_R_DIGEST_TOO_LARGE);
         goto error;
     }
-    memcpy(&digest.buffer[0], dgst, dgst_len);
+    memcpy(&digest.buffer[0], dgst, digest.size);
 
     r = init_tpm_key(&esys_ctx, &keyHandle, tpm2Data);
     ERRchktss(ecdsa_sign, r, goto error);
@@ -616,7 +629,7 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
 
     if (password) {
         DBG("Setting a password for the created key.\n");
-        if (strlen(password) > sizeof(tpm2Data->userauth.buffer) - 1) {
+        if (strlen(password) > sizeof(tpm2Data->userauth.buffer) - 1 || strlen(password) > sizeof(inSensitive.sensitive.userAuth.buffer) - 1) {
             goto error;
         }
         tpm2Data->userauth.size = strlen(password);
