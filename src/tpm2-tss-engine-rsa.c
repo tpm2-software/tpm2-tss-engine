@@ -169,6 +169,10 @@ rsa_priv_enc(int flen, const unsigned char *from, unsigned char *to, RSA *rsa,
     DBGBUF(&sig->buffer[0], sig->size);
 
     ret = sig->size;
+    if (ret > RSA_size(rsa) || ret <= 0) {
+        ERR(rsa_priv_enc, TPM2TSS_R_DIGEST_TOO_LARGE);
+        goto error;
+    }
     memcpy(to, &sig->buffer[0], ret);
 
     goto out;
@@ -226,7 +230,7 @@ rsa_priv_dec(int flen, const unsigned char *from, unsigned char *to, RSA * rsa,
     TPMT_RSA_DECRYPT inScheme;
 
     TPM2B_PUBLIC_KEY_RSA cipher = { .size = flen };
-    if (flen > (int)sizeof(cipher.buffer)) {
+    if (flen > (int)sizeof(cipher.buffer) || flen < 0) {
         ERR(rsa_priv_dec, TPM2TSS_R_DIGEST_TOO_LARGE);
         goto error;
     }
@@ -257,6 +261,10 @@ rsa_priv_dec(int flen, const unsigned char *from, unsigned char *to, RSA * rsa,
     DBGBUF(&message->buffer[0], message->size);
 
     flen = message->size;
+    if (flen > RSA_size(rsa) || flen <= 0) {
+        ERR(rsa_priv_dec, TPM2TSS_R_DIGEST_TOO_LARGE);
+        goto error;
+    }
     memcpy(to, &message->buffer[0], flen);
 
     goto out;
