@@ -227,109 +227,23 @@ out:
 }
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
-/** Sign data using a TPM key
- *
- * This function performs the sign function using the private key in ECDSA.
- * This operation is usually used to perform signature and authentication
- * operations.
- * @param dgst The data to be signed.
- * @param dgst_len Length of the from buffer.
- * @param inv Ignored
- * @param rp Ignored
- * @param eckey The ECC key object.
- * @retval 0 on failure
- * @retval size Size of the returned signature
- */
 static ECDSA_SIG *
-ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
-                const BIGNUM *rp, EC_KEY *eckey)
+ecdsa_sign(ESYS_CONTEXT *esys_ctx, ESYS_TR key_handle,
+	   TPM2B_DIGEST *digest, TPMT_TK_HASHCHECK *validation,
+	   TPM2_ALG_ID hash_alg)
 {
-    ECDSA_SIG *ret = NULL;
-    TPM2_DATA *tpm2Data = tpm2tss_ecc_getappdata(eckey);
+    TPMT_SIG_SCHEME inScheme = {
+      .scheme = TPM2_ALG_ECDSA,
+      .details.ecdsa.hashAlg = hash_alg,
+    };
     BIGNUM *bns = NULL, *bnr = NULL;
-
-    /* If this is not a TPM2 key, fall through to software functions */
-    if (tpm2Data == NULL) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000
-        ECDSA_set_method(eckey, ecc_method_default);
-        ret = ECDSA_do_sign_ex(dgst, dgst_len, inv, rp, eckey);
-        ECDSA_set_method(eckey, ecc_methods);
-        return ret;
-#else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
-        EC_KEY_set_method(eckey, ecc_method_default);
-        ret = ECDSA_do_sign_ex(dgst, dgst_len, inv, rp, eckey);
-        EC_KEY_set_method(eckey, ecc_methods);
-        return ret;
-#endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
-    }
-
-    DBG("ecdsa_sign called for input data(size=%i):\n", dgst_len);
-    DBGBUF(dgst, dgst_len);
-
-    TSS2_RC r;
-    ESYS_CONTEXT *esys_ctx = NULL;
-    ESYS_TR keyHandle = ESYS_TR_NONE;
+    ECDSA_SIG *ret = NULL;
     TPMT_SIGNATURE *sig = NULL;
+    TSS2_RC r;
 
-    TPMT_TK_HASHCHECK validation = { .tag = TPM2_ST_HASHCHECK,
-                                     .hierarchy = TPM2_RH_NULL,
-                                     .digest.size = 0 };
-
-    TPMT_SIG_SCHEME inScheme = { .scheme = TPM2_ALG_ECDSA };
-
-    /*
-     * ECDSA signatures truncate the incoming hash to fit the curve,
-     * and the signature mechanism is the same regardless of the
-     * hash being used.
-     *
-     * The TPM bizarrely wants to be told the hash algorithm, and
-     * either it or the TSS will validate that the digest length
-     * matches the hash that it's told, despite it having no business
-     * caring about such things.
-     *
-     * So, we can truncate the digest any pretend it's any smaller
-     * digest that the TPM actually does support, as long as that
-     * digest is larger than the size of the curve.
-     */
-    int curve_len = (EC_GROUP_order_bits(EC_KEY_get0_group(eckey)) + 7) / 8;
-    /* If we couldn't work it out, don't truncate */
-    if (!curve_len)
-	    curve_len = dgst_len;
-
-    if (dgst_len == SHA_DIGEST_LENGTH ||
-	(curve_len <= SHA_DIGEST_LENGTH && dgst_len > SHA_DIGEST_LENGTH)) {
-	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA1;
-	    dgst_len = SHA_DIGEST_LENGTH;
-    } else if (dgst_len == SHA256_DIGEST_LENGTH ||
-	(curve_len <= SHA256_DIGEST_LENGTH && dgst_len > SHA256_DIGEST_LENGTH)) {
-	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA256;
-	    dgst_len = SHA256_DIGEST_LENGTH;
-    } else if (dgst_len == SHA384_DIGEST_LENGTH ||
-	(curve_len <= SHA384_DIGEST_LENGTH && dgst_len > SHA384_DIGEST_LENGTH)) {
-	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA384;
-	    dgst_len = SHA384_DIGEST_LENGTH;
-    } else if (dgst_len == SHA512_DIGEST_LENGTH ||
-	(curve_len <= SHA512_DIGEST_LENGTH && dgst_len > SHA512_DIGEST_LENGTH)) {
-	    inScheme.details.ecdsa.hashAlg = TPM2_ALG_SHA512;
-	    dgst_len = SHA512_DIGEST_LENGTH;
-    } else {
-        ERR(ecdsa_sign, TPM2TSS_R_PADDING_UNKNOWN);
-        goto error;
-    }
-
-    TPM2B_DIGEST digest = { .size = dgst_len };
-    if (digest.size > sizeof(digest.buffer)) {
-        ERR(ecdsa_sign, TPM2TSS_R_DIGEST_TOO_LARGE);
-        goto error;
-    }
-    memcpy(&digest.buffer[0], dgst, digest.size);
-
-    r = init_tpm_key(&esys_ctx, &keyHandle, tpm2Data);
-    ERRchktss(ecdsa_sign, r, goto error);
-
-    r = Esys_Sign(esys_ctx, keyHandle,
-                  ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                  &digest, &inScheme, &validation, &sig);
+    r = Esys_Sign(esys_ctx, key_handle, ESYS_TR_PASSWORD,
+                  ESYS_TR_NONE, ESYS_TR_NONE, digest, &inScheme,
+                  validation, &sig);
     ERRchktss(ecdsa_sign, r, goto error);
 
     ret = ECDSA_SIG_new();
@@ -355,27 +269,129 @@ ecdsa_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
     goto out;
+
+ error:
+    if (bns)
+      BN_free(bns);
+    if (bnr)
+      BN_free(bnr);
+    if (ret)
+      ECDSA_SIG_free(ret);
+    ret = NULL;
+ out:
+    free(sig);
+    return ret;
+}
+
+/** Sign data using a TPM key
+ *
+ * This function performs the sign function using the private key in ECDSA.
+ * This operation is usually used to perform signature and authentication
+ * operations.
+ * @param dgst The data to be signed.
+ * @param dgst_len Length of the from buffer.
+ * @param inv Ignored
+ * @param rp Ignored
+ * @param eckey The ECC key object.
+ * @retval 0 on failure
+ * @retval size Size of the returned signature
+ */
+static ECDSA_SIG *
+ecdsa_ec_key_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
+		  const BIGNUM *rp, EC_KEY *eckey)
+{
+    ECDSA_SIG *ret = NULL;
+    TPM2_DATA *tpm2Data = tpm2tss_ecc_getappdata(eckey);
+    TPM2_ALG_ID hash_alg;
+
+    /* If this is not a TPM2 key, fall through to software functions */
+    if (tpm2Data == NULL) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+        ECDSA_set_method(eckey, ecc_method_default);
+        ret = ECDSA_do_sign_ex(dgst, dgst_len, inv, rp, eckey);
+        ECDSA_set_method(eckey, ecc_methods);
+        return ret;
+#else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+        EC_KEY_set_method(eckey, ecc_method_default);
+        ret = ECDSA_do_sign_ex(dgst, dgst_len, inv, rp, eckey);
+        EC_KEY_set_method(eckey, ecc_methods);
+        return ret;
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+    }
+
+    DBG("ecdsa_sign called for input data(size=%i):\n", dgst_len);
+    DBGBUF(dgst, dgst_len);
+
+    TSS2_RC r;
+    ESYS_CONTEXT *esys_ctx = NULL;
+    ESYS_TR keyHandle = ESYS_TR_NONE;
+
+    TPMT_TK_HASHCHECK validation = { .tag = TPM2_ST_HASHCHECK,
+                                     .hierarchy = TPM2_RH_NULL,
+                                     .digest.size = 0 };
+
+    /*
+     * ECDSA signatures truncate the incoming hash to fit the curve,
+     * and the signature mechanism is the same regardless of the
+     * hash being used.
+     *
+     * The TPM bizarrely wants to be told the hash algorithm, and
+     * either it or the TSS will validate that the digest length
+     * matches the hash that it's told, despite it having no business
+     * caring about such things.
+     *
+     * So, we can truncate the digest any pretend it's any smaller
+     * digest that the TPM actually does support, as long as that
+     * digest is larger than the size of the curve.
+     */
+    int curve_len = (EC_GROUP_order_bits(EC_KEY_get0_group(eckey)) + 7) / 8;
+    /* If we couldn't work it out, don't truncate */
+    if (!curve_len)
+	    curve_len = dgst_len;
+
+    if (dgst_len == SHA_DIGEST_LENGTH ||
+	(curve_len <= SHA_DIGEST_LENGTH && dgst_len > SHA_DIGEST_LENGTH)) {
+	    hash_alg = TPM2_ALG_SHA1;
+	    dgst_len = SHA_DIGEST_LENGTH;
+    } else if (dgst_len == SHA256_DIGEST_LENGTH ||
+	(curve_len <= SHA256_DIGEST_LENGTH && dgst_len > SHA256_DIGEST_LENGTH)) {
+	    hash_alg = TPM2_ALG_SHA256;
+	    dgst_len = SHA256_DIGEST_LENGTH;
+    } else if (dgst_len == SHA384_DIGEST_LENGTH ||
+	(curve_len <= SHA384_DIGEST_LENGTH && dgst_len > SHA384_DIGEST_LENGTH)) {
+	    hash_alg = TPM2_ALG_SHA384;
+	    dgst_len = SHA384_DIGEST_LENGTH;
+    } else if (dgst_len == SHA512_DIGEST_LENGTH ||
+	(curve_len <= SHA512_DIGEST_LENGTH && dgst_len > SHA512_DIGEST_LENGTH)) {
+	    hash_alg = TPM2_ALG_SHA512;
+	    dgst_len = SHA512_DIGEST_LENGTH;
+    } else {
+        ERR(ecdsa_sign, TPM2TSS_R_PADDING_UNKNOWN);
+        goto error;
+    }
+
+    TPM2B_DIGEST digest = { .size = dgst_len };
+    if (digest.size > sizeof(digest.buffer)) {
+        ERR(ecdsa_sign, TPM2TSS_R_DIGEST_TOO_LARGE);
+        goto error;
+    }
+    memcpy(&digest.buffer[0], dgst, digest.size);
+
+    r = init_tpm_key(&esys_ctx, &keyHandle, tpm2Data);
+    ERRchktss(ecdsa_sign, r, goto error);
+
+    ret = ecdsa_sign(esys_ctx, keyHandle, &digest, &validation, hash_alg);
+
+    goto out;
  error:
     r = -1;
  out:
-    free(sig);
     if (keyHandle != ESYS_TR_NONE) {
         if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
             Esys_TR_Close(esys_ctx, &keyHandle);
         } else {
             Esys_FlushContext(esys_ctx, keyHandle);
         }
-    }
-    if (r != TSS2_RC_SUCCESS && ret != NULL) {
-        if (bns)
-            BN_free(bns);
-        if (bnr)
-            BN_free(bnr);
-    }
-    if (r != TSS2_RC_SUCCESS) {
-        if (ret)
-            ECDSA_SIG_free(ret);
-        ret = NULL;
     }
 
     esys_ctx_free(&esys_ctx);
@@ -709,7 +725,7 @@ init_ecc(ENGINE *e)
     if (ecc_methods == NULL)
         return 0;
 
-    ECDSA_METHOD_set_sign(ecc_methods, ecdsa_sign);
+    ECDSA_METHOD_set_sign(ecc_methods, ecdsa_ec_key_sign);
 
     if (ec_key_app_data == -1)
         ec_key_app_data = ECDSA_get_ex_new_index(0, NULL, NULL, NULL,
@@ -727,7 +743,7 @@ init_ecc(ENGINE *e)
                       unsigned int *, const BIGNUM *, const BIGNUM *, EC_KEY *)
         = NULL;
     EC_KEY_METHOD_get_sign(ecc_methods, &orig_sign, NULL, NULL);
-    EC_KEY_METHOD_set_sign(ecc_methods, orig_sign, NULL, ecdsa_sign);
+    EC_KEY_METHOD_set_sign(ecc_methods, orig_sign, NULL, ecdsa_ec_key_sign);
     EC_KEY_METHOD_set_compute_key(ecc_methods, ecdh_compute_key);
 
     if (ec_key_app_data == -1)
