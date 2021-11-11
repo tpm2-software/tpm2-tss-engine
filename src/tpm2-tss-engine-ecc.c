@@ -51,6 +51,11 @@ const EC_KEY_METHOD *ecc_method_default = NULL;
 EC_KEY_METHOD *ecc_methods = NULL;
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
+#ifdef HAVE_OPENSSL_DIGEST_SIGN
+static int (*ecdsa_pkey_orig_copy)(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src);
+static void (*ecdsa_pkey_orig_cleanup)(EVP_PKEY_CTX *ctx);
+#endif /* HAVE_OPENSSL_DIGEST_SIGN */
+
 static TPM2B_DATA allOutsideInfo = {
     .size = 0,
 };
@@ -397,6 +402,93 @@ ecdsa_ec_key_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
     esys_ctx_free(&esys_ctx);
     return (r == TSS2_RC_SUCCESS) ? ret : NULL;
 }
+
+#ifdef HAVE_OPENSSL_DIGEST_SIGN
+static int
+ecdsa_pkey_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src)
+{
+    if (ecdsa_pkey_orig_copy && !ecdsa_pkey_orig_copy(dst, src))
+        return 0;
+
+    return digest_sign_copy(dst, src);
+}
+
+static void
+ecdsa_pkey_cleanup(EVP_PKEY_CTX *ctx)
+{
+    digest_sign_cleanup(ctx);
+
+    if (ecdsa_pkey_orig_cleanup)
+        ecdsa_pkey_orig_cleanup(ctx);
+}
+
+/* called for digest & sign init, after message digest algorithm set */
+static int
+ecdsa_digest_custom(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
+{
+    EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+    EC_KEY *eckey = EVP_PKEY_get0_EC_KEY(pkey);
+    TPM2_DATA *tpm2data = tpm2tss_ecc_getappdata(eckey);
+
+    DBG("ecdsa_digest_custom %p %p\n", ctx, mctx);
+
+    return digest_sign_init(ctx, mctx, tpm2data, ECDSA_size(eckey));
+}
+
+static int
+ecdsa_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
+              EVP_MD_CTX *mctx)
+{
+    TPM2_SIG_DATA *sig_data = EVP_PKEY_CTX_get_app_data(ctx);
+    TSS2_RC r = TSS2_RC_SUCCESS;
+    TPMT_TK_HASHCHECK *validation_ptr = NULL;
+    TPM2B_DIGEST *digest_ptr = NULL;
+    ECDSA_SIG *ecdsa_s = NULL;
+
+    DBG("ecdsa_signctx %p %p sig_data %p\n", ctx, mctx, sig_data);
+
+    if (!sig) {
+        /* caller just wants to know the size */
+        *siglen = sig_data->sig_size;
+        return 1;
+    }
+
+    if (!sig_data) {
+        /* handle non-TPM key */
+        unsigned char md[EVP_MAX_MD_SIZE];
+        unsigned int md_len = 0;
+
+        if (!EVP_DigestFinal_ex(mctx, md, &md_len))
+            return 0;
+        if (EVP_PKEY_sign(ctx, sig, siglen, md, md_len) <= 0)
+            return 0;
+        return 1;
+    }
+
+    if (!digest_finish(sig_data, &digest_ptr, &validation_ptr))
+        return 0;
+
+    ecdsa_s = ecdsa_sign(sig_data->key->esys_ctx, sig_data->key->key_handle,
+                         digest_ptr, validation_ptr,
+                         sig_data->hash_alg);
+    if (!ecdsa_s)
+        goto error;
+
+    *siglen = i2d_ECDSA_SIG(ecdsa_s, &sig);
+
+    r = 1;
+    goto out;
+
+ error:
+    r = 0;
+ out:
+    ECDSA_SIG_free(ecdsa_s);
+    free(digest_ptr);
+    free(validation_ptr);
+
+    return r;
+}
+#endif /* HAVE_OPENSSL_DIGEST_SIGN */
 
 /** Helper to populate the ECC key object.
  *
@@ -750,6 +842,34 @@ init_ecc(ENGINE *e)
         ec_key_app_data = EC_KEY_get_ex_new_index(0, NULL, NULL, NULL,
                                                   free_ecc_appdata);
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+
+#if HAVE_OPENSSL_DIGEST_SIGN
+    /* digest and sign support */
+
+    EVP_PKEY_METHOD *pkey_ecc_methods;
+
+    pkey_ecc_methods = EVP_PKEY_meth_new(EVP_PKEY_EC, 0);
+    if (pkey_ecc_methods == NULL)
+        return 0;
+
+    const EVP_PKEY_METHOD *pkey_orig_ecc_methods =
+        EVP_PKEY_meth_find(EVP_PKEY_EC);
+    if (pkey_orig_ecc_methods == NULL)
+        return 0;
+    EVP_PKEY_meth_copy(pkey_ecc_methods, pkey_orig_ecc_methods);
+    /*
+     * save originals since we only override some of the pkey
+     * functionality, rather than reimplementing all of it
+     */
+    EVP_PKEY_meth_get_copy(pkey_ecc_methods, &ecdsa_pkey_orig_copy);
+    EVP_PKEY_meth_get_cleanup(pkey_ecc_methods, &ecdsa_pkey_orig_cleanup);
+
+    EVP_PKEY_meth_set_copy(pkey_ecc_methods, ecdsa_pkey_copy);
+    EVP_PKEY_meth_set_cleanup(pkey_ecc_methods, ecdsa_pkey_cleanup);
+    EVP_PKEY_meth_set_signctx(pkey_ecc_methods, NULL, ecdsa_signctx);
+    EVP_PKEY_meth_set_digest_custom(pkey_ecc_methods, ecdsa_digest_custom);
+    EVP_PKEY_meth_add0(pkey_ecc_methods);
+#endif /* HAVE_OPENSSL_DIGEST_SIGN */
 
     return 1;
 }

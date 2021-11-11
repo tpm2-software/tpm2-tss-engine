@@ -33,6 +33,15 @@
 #ifndef TPM2_TSS_ENGINE_COMMON_H
 #define TPM2_TSS_ENGINE_COMMON_H
 
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L \
+    && !defined(__STDC_NO_ATOMICS__)
+# include <stdatomic.h>
+# define TPM2_TSS_ENGINE_HAVE_C11_ATOMICS
+typedef _Atomic int T2TE_ATOMIC_INT;
+#else
+typedef int T2TE_ATOMIC_INT;
+#endif
+
 #include <tpm2-tss-engine.h>
 #include <tss2/tss2_mu.h>
 #include <tss2/tss2_esys.h>
@@ -159,5 +168,32 @@ DECLARE_PEM_write_bio(TSSPRIVKEY, TSSPRIVKEY);
 DECLARE_PEM_read_bio(TSSPRIVKEY, TSSPRIVKEY);
 
 #define OID_loadableKey "2.23.133.10.1.3"
+
+typedef struct {
+    T2TE_ATOMIC_INT refcount;
+    ESYS_CONTEXT *esys_ctx;
+    ESYS_TR key_handle;
+    int privatetype;
+} TPM2_SIG_KEY_CTX;
+
+typedef struct {
+    TPM2_SIG_KEY_CTX *key;
+    TPM2_ALG_ID hash_alg;
+    ESYS_TR seq_handle;
+    size_t sig_size;
+} TPM2_SIG_DATA;
+
+int
+digest_update(EVP_MD_CTX *ctx, const void *data, size_t count);
+int
+digest_finish(TPM2_SIG_DATA *data, TPM2B_DIGEST **digest,
+              TPMT_TK_HASHCHECK **validation);
+int
+digest_sign_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx, TPM2_DATA *tpm2data,
+                 size_t sig_size);
+int
+digest_sign_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src);
+void
+digest_sign_cleanup(EVP_PKEY_CTX *ctx);
 
 #endif /* TPM2_TSS_ENGINE_COMMON_H */
