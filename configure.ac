@@ -119,6 +119,12 @@ PKG_CHECK_MODULES([TSS2_TCTILDR], [tss2-tctildr])
 AC_CHECK_LIB([crypto], EC_KEY_METHOD_set_compute_key,
       [AM_CONDITIONAL([HAVE_OPENSSL_ECDH], true)],
       [AM_CONDITIONAL([HAVE_OPENSSL_ECDH], false)])
+AC_CHECK_LIB([crypto], EVP_PKEY_meth_set_digest_custom,
+      [AM_CONDITIONAL([HAVE_OPENSSL_DIGEST_SIGN], true)],
+      [AM_CONDITIONAL([HAVE_OPENSSL_DIGEST_SIGN], false)])
+AS_IF([test "x$ac_cv_lib_crypto_EVP_PKEY_meth_set_digest_custom" = xyes],
+      [AC_DEFINE([HAVE_OPENSSL_DIGEST_SIGN], [1],
+                 Have required functionality from OpenSSL to support digest and sign)])
 
 AC_PATH_PROG([PANDOC], [pandoc])
 AS_IF([test -z "$PANDOC"],

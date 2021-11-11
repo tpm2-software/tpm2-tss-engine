@@ -122,6 +122,17 @@ $ tpm2tss-genkey -a rsa rsa.tss
 $ openssl req -new -x509 -engine tpm2tss -key rsa.tss  -keyform engine -out rsa.crt
 ```
 
+## Signing using restricted key
+Signing using a restricted ECDSA key is possible with the caveat that
+the TPM must be used for the digest, so higher-level digest & sign
+operations must be used instead, e.g.:
+```
+$ openssl dgst -engine tpm2tss -keyform engine -sha256 -sign ${HANDLE} -out mysig mydata.txt
+```
+Where `${HANDLE}` is the TPM persistent handle ID for the restricted
+key created by an external tool (since tpm2tss-genkey doesn't support
+creating restricted keys).
+
 # TLS and s_server
 This engine can be used in all places where OpenSSL is used to create a TLS
 secure channel connection. You have can specify the command

@@ -69,6 +69,7 @@ include_HEADERS = include/tpm2-tss-engine.h
 libtpm2tss_la_SOURCES = src/tpm2-tss-engine.c \
                         src/tpm2-tss-engine-common.c \
                         src/tpm2-tss-engine-common.h \
+                        src/tpm2-tss-engine-digest-sign.c \
                         src/tpm2-tss-engine-err.c \
                         src/tpm2-tss-engine-err.h \
                         src/tpm2-tss-engine-ecc.c \
@@ -131,6 +132,9 @@ TESTS_SHELL = test/ecdsa.sh \
               test/sclient.sh
 if HAVE_OPENSSL_ECDH
 TESTS_SHELL += test/ecdh.sh
+endif
+if HAVE_OPENSSL_DIGEST_SIGN
+TESTS_SHELL += test/ecdsa-restricted.sh
 endif
 EXTRA_DIST += $(TESTS_SHELL) test/neg-handle.pem
 TEST_EXTENSIONS = .sh

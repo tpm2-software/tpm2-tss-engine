@@ -90,6 +90,13 @@ void ERR_error(int function, int reason, const char *file, int line);
 #define TPM2TSS_F_tpm2tss_ecc_makekey      123
 #define TPM2TSS_F_ecdh_compute_key      124
 
+/* tpm2-tss-engine-digest-sign.c */
+#define TPM2TSS_F_digest_init   150
+#define TPM2TSS_F_digest_update 151
+#define TPM2TSS_F_digest_finish 152
+#define TPM2TSS_F_digest_sign_init      153
+#define TPM2TSS_F_digest_sign_copy      154
+
 /* tpm2-tss-engine-rand.c */
 #define TPM2TSS_F_rand_bytes    130
 /* tpm2-tss-engine-rsa.c */
