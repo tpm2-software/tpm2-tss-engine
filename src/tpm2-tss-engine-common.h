@@ -51,6 +51,7 @@ extern char *tcti_nameconf;
 int init_ecc(ENGINE *e);
 int init_rand(ENGINE *e);
 int init_rsa(ENGINE *e);
+int init_digests(ENGINE *e);
 
 TSS2_RC esys_ctx_init (ESYS_CONTEXT **esys_ctx);
 

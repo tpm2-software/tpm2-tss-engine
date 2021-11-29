@@ -69,6 +69,13 @@ WARNING:esys:src/tss2-esys/esys_tcti_default.c:137:tcti_from_file() Could not lo
 Note: These warnings stem from the tpm2-tss libraries and are not an issue, as
 long as a TPM connection is established afterwards by a different tcti.
 
+
+## Digest(Hash)
+```
+openssl dgst -sha1 -engine tpm2tss hello.txt
+openssl dgst -sha256 -engine tpm2tss hello.txt
+```
+
 ## RSA operations
 
 ### RSA decrypt

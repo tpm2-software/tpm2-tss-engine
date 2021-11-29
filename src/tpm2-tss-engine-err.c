@@ -68,6 +68,8 @@ static ERR_STRING_DATA TPM2TSS_f[] = {
     ERR_F(rsa_priv_dec),
     ERR_F(tpm2tss_rsa_genkey),
     ERR_F(populate_rsa),
+    ERR_F(tpm_digest_update),
+    ERR_F(tpm_digest_final),
     {0, NULL}
 };
 
