@@ -72,7 +72,7 @@ jobs:
         run: ./.ci/ci-runner.sh
   whitespace-check:
     runs-on: ubuntu-latest
-    if: "!contains(github.ref, 'coverity_scan')"
+    if: github.event_name == 'pull_request' && !contains(github.ref, 'coverity_scan')
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
