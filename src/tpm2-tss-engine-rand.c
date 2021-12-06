@@ -109,10 +109,9 @@ rand_bytes(unsigned char *buf, int num)
         buf += b->size;
     }
 
+ end:
     if(b)
         free(b);
-
- end:
     esys_ctx_free(&esys_ctx);
     return (r == TSS2_RC_SUCCESS);
 }
