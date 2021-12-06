@@ -40,6 +40,46 @@
 #include "tpm2-tss-engine.h"
 #include "tpm2-tss-engine-common.h"
 
+/** rand seed
+ * @retval 1 on success
+ * @retval 0 on failure
+ */
+static int
+rand_seed(const void *seed, int seed_len)
+{
+    ESYS_CONTEXT *esys_ctx = NULL;
+    TSS2_RC r;
+
+    r = esys_ctx_init(&esys_ctx);
+    ERRchktss(rand_seed, r, goto end);
+
+    TPM2B_SENSITIVE_DATA stir;
+    size_t offset = 0;
+    char* cur_data = (char*)seed;
+
+    static const size_t tpm_random_stir_max_size = 128; 
+    while(offset < (size_t)seed_len) {
+        size_t left = seed_len - offset;
+        // in test, tpm stir seed size beyond 128 will failed with 0x000001d5
+        size_t chunk = left > tpm_random_stir_max_size ? tpm_random_stir_max_size : left;
+
+        stir.size = chunk;
+        memcpy(stir.buffer, cur_data + offset, chunk);
+
+        r = Esys_StirRandom(
+            esys_ctx,
+            ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
+            &stir);
+        ERRchktss(rand_seed, r, goto end);
+
+        offset += seed_len;
+    }
+
+end:
+    esys_ctx_free(&esys_ctx);
+    return (r == TSS2_RC_SUCCESS)? 1 : 0;
+}
+
 /** Genereate random values
  *
  * Use the TPM to generate a number of random values.
@@ -67,12 +107,13 @@ rand_bytes(unsigned char *buf, int num)
         memcpy(buf, &b->buffer, b->size);
         num -= b->size;
         buf += b->size;
-        free(b);
     }
 
-    esys_ctx_free(&esys_ctx);
+    if(b)
+        free(b);
 
  end:
+    esys_ctx_free(&esys_ctx);
     return (r == TSS2_RC_SUCCESS);
 }
 
@@ -89,7 +130,7 @@ rand_status()
 }
 
 static RAND_METHOD rand_methods = {
-    NULL,                       /* seed() */
+    rand_seed,
     rand_bytes,
     NULL,                       /* cleanup() */
     NULL,                       /* add() */
