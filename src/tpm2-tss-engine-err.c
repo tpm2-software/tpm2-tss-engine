@@ -63,6 +63,7 @@ static ERR_STRING_DATA TPM2TSS_f[] = {
     ERR_F(tpm2tss_ecc_makekey),
     /* tpm2-tss-engine-rand.c */
     ERR_F(rand_bytes),
+    ERR_F(rand_seed),
     /* tpm2-tss-engine-rsa.c */
     ERR_F(rsa_priv_enc),
     ERR_F(rsa_priv_dec),
