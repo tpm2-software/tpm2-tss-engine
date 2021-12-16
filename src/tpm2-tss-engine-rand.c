@@ -71,7 +71,7 @@ rand_seed(const void *seed, int seed_len)
             &stir);
         ERRchktss(rand_seed, r, goto end);
 
-        offset += seed_len;
+        offset += chunk;
     }
 
 end:
