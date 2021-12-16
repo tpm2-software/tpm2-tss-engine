@@ -55,12 +55,11 @@ rand_seed(const void *seed, int seed_len)
 
     TPM2B_SENSITIVE_DATA stir;
     size_t offset = 0;
-    char* cur_data = (char*)seed;
+    char *cur_data = (char*)seed;
 
     static const size_t tpm_random_stir_max_size = 128; 
     while(offset < (size_t)seed_len) {
         size_t left = seed_len - offset;
-        // in test, tpm stir seed size beyond 128 will failed with 0x000001d5
         size_t chunk = left > tpm_random_stir_max_size ? tpm_random_stir_max_size : left;
 
         stir.size = chunk;
@@ -111,8 +110,7 @@ rand_bytes(unsigned char *buf, int num)
     }
 
  end:
-    if(b)
-        free(b);
+    free(b);
     if(esys_ctx)
         esys_ctx_free(&esys_ctx);
     return (r == TSS2_RC_SUCCESS);
