@@ -104,6 +104,7 @@ void ERR_error(int function, int reason, const char *file, int line);
 #define TPM2TSS_F_rsa_priv_dec     141
 #define TPM2TSS_F_tpm2tss_rsa_genkey    142
 #define TPM2TSS_F_populate_rsa          143
+#define TPM2TSS_F_rsa_signctx           144
 
 /* Reason codes */
 #define TPM2TSS_R_TPM2DATA_READ_FAILED  100

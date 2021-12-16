@@ -48,6 +48,11 @@ RSA_METHOD rsa_methods;
 RSA_METHOD *rsa_methods = NULL;
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
+#ifdef HAVE_OPENSSL_DIGEST_SIGN
+static int (*rsa_pkey_orig_copy)(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src);
+static void (*rsa_pkey_orig_cleanup)(EVP_PKEY_CTX *ctx);
+#endif /* HAVE_OPENSSL_DIGEST_SIGN */
+
 static TPM2B_DATA allOutsideInfo = {
     .size = 0,
 };
@@ -621,6 +626,113 @@ RSA_METHOD rsa_methods = {
 };
 #endif                          /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
+#ifdef HAVE_OPENSSL_DIGEST_SIGN
+static int
+rsa_pkey_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src)
+{
+    if (rsa_pkey_orig_copy && !rsa_pkey_orig_copy(dst, src))
+        return 0;
+
+    return digest_sign_copy(dst, src);
+}
+
+static void
+rsa_pkey_cleanup(EVP_PKEY_CTX *ctx)
+{
+    digest_sign_cleanup(ctx);
+
+    if (rsa_pkey_orig_cleanup)
+        rsa_pkey_orig_cleanup(ctx);
+}
+
+/* called for digest & sign init, after message digest algorithm set */
+static int
+rsa_digest_custom(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
+{
+    EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+    RSA *rsa = EVP_PKEY_get0_RSA(pkey);
+    TPM2_DATA *tpm2data = RSA_get_app_data(rsa);
+
+    DBG("rsa_digest_custom %p %p\n", ctx, mctx);
+
+    return digest_sign_init(ctx, mctx, tpm2data, RSA_size(rsa));
+}
+
+static int
+rsa_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
+            EVP_MD_CTX *mctx)
+{
+    TPM2_SIG_DATA *sig_data = EVP_PKEY_CTX_get_app_data(ctx);
+    TSS2_RC r = TSS2_RC_SUCCESS;
+    TPMT_TK_HASHCHECK *validation_ptr = NULL;
+    TPM2B_DIGEST *digest_ptr = NULL;
+    TPMT_SIGNATURE *tpm_sig = NULL;
+    int pad_mode;
+
+    DBG("rsa_signctx %p %p sig_data %p\n", ctx, mctx, sig_data);
+
+    if (!sig) {
+        /* caller just wants to know the size */
+        *siglen = sig_data->sig_size;
+        return 1;
+    }
+
+    if (!sig_data) {
+        /* handle non-TPM key */
+        unsigned char md[EVP_MAX_MD_SIZE];
+        unsigned int md_len = 0;
+
+        if (!EVP_DigestFinal_ex(mctx, md, &md_len))
+            return 0;
+        if (EVP_PKEY_sign(ctx, sig, siglen, md, md_len) <= 0)
+            return 0;
+        return 1;
+    }
+
+    if (EVP_PKEY_CTX_get_rsa_padding(ctx, &pad_mode) <= 0)
+        return 0;
+
+    TPMT_SIG_SCHEME in_scheme = {
+        .scheme = TPM2_ALG_NULL,
+        .details.rsassa.hashAlg = sig_data->hash_alg,
+    };
+    switch (pad_mode) {
+    case RSA_PKCS1_PADDING:
+        in_scheme.scheme = TPM2_ALG_RSASSA;
+        break;
+    case RSA_PKCS1_PSS_PADDING:
+        in_scheme.scheme = TPM2_ALG_RSAPSS;
+        break;
+    default:
+        ERR(rsa_signctx, TPM2TSS_R_PADDING_UNKNOWN);
+        return 0;
+    }
+
+    if (!digest_finish(sig_data, &digest_ptr, &validation_ptr))
+        return 0;
+
+    r = Esys_Sign(sig_data->key->esys_ctx, sig_data->key->key_handle,
+                  ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                  digest_ptr, &in_scheme, validation_ptr, &tpm_sig);
+    ERRchktss(rsa_signctx, r, goto error);
+
+    memcpy(sig, tpm_sig->signature.rsassa.sig.buffer, sig_data->sig_size);
+    *siglen = sig_data->sig_size;
+
+    r = 1;
+    goto out;
+
+ error:
+    r = 0;
+ out:
+    free(tpm_sig);
+    free(digest_ptr);
+    free(validation_ptr);
+
+    return r;
+}
+#endif /* HAVE_OPENSSL_DIGEST_SIGN */
+
 /** Initialize the tpm2tss engine's rsa submodule
  *
  * Initialize the tpm2tss engine's submodule by setting function pointer.
@@ -641,7 +753,8 @@ init_rsa(ENGINE *e)
     rsa_methods.rsa_mod_exp = default_rsa->rsa_mod_exp;
     rsa_methods.bn_mod_exp = default_rsa->bn_mod_exp;
 
-    return ENGINE_set_RSA(e, &rsa_methods);
+    if (!ENGINE_set_RSA(e, &rsa_methods))
+        return 0;
 #else /* OPENSSL_VERSION_NUMBER < 0x10100000 */
     default_rsa = RSA_PKCS1_OpenSSL();
     if (default_rsa == NULL)
@@ -653,6 +766,38 @@ init_rsa(ENGINE *e)
     RSA_meth_set_priv_dec(rsa_methods, rsa_priv_dec);
     RSA_meth_set_finish(rsa_methods, rsa_finish);
 
-    return ENGINE_set_RSA(e, rsa_methods);
+    if (!ENGINE_set_RSA(e, rsa_methods))
+        return 0;
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
+
+#if HAVE_OPENSSL_DIGEST_SIGN
+    /* digest and sign support */
+
+    EVP_PKEY_METHOD *pkey_rsa_methods;
+
+    pkey_rsa_methods = EVP_PKEY_meth_new(EVP_PKEY_RSA,
+                                         EVP_PKEY_FLAG_AUTOARGLEN);
+    if (pkey_rsa_methods == NULL)
+        return 0;
+
+    const EVP_PKEY_METHOD *pkey_orig_rsa_methods =
+        EVP_PKEY_meth_find(EVP_PKEY_RSA);
+    if (pkey_orig_rsa_methods == NULL)
+        return 0;
+    EVP_PKEY_meth_copy(pkey_rsa_methods, pkey_orig_rsa_methods);
+    /*
+     * save originals since we only override some of the pkey
+     * functionality, rather than reimplementing all of it
+     */
+    EVP_PKEY_meth_get_copy(pkey_rsa_methods, &rsa_pkey_orig_copy);
+    EVP_PKEY_meth_get_cleanup(pkey_rsa_methods, &rsa_pkey_orig_cleanup);
+
+    EVP_PKEY_meth_set_copy(pkey_rsa_methods, rsa_pkey_copy);
+    EVP_PKEY_meth_set_cleanup(pkey_rsa_methods, rsa_pkey_cleanup);
+    EVP_PKEY_meth_set_signctx(pkey_rsa_methods, NULL, rsa_signctx);
+    EVP_PKEY_meth_set_digest_custom(pkey_rsa_methods, rsa_digest_custom);
+    EVP_PKEY_meth_add0(pkey_rsa_methods);
+#endif /* HAVE_OPENSSL_DIGEST_SIGN */
+
+    return 1;
 }
