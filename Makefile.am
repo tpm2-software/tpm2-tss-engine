@@ -134,7 +134,8 @@ if HAVE_OPENSSL_ECDH
 TESTS_SHELL += test/ecdh.sh
 endif
 if HAVE_OPENSSL_DIGEST_SIGN
-TESTS_SHELL += test/ecdsa-restricted.sh
+TESTS_SHELL += test/ecdsa-restricted.sh \
+               test/rsasign_restricted.sh
 endif
 EXTRA_DIST += $(TESTS_SHELL) test/neg-handle.pem
 TEST_EXTENSIONS = .sh
