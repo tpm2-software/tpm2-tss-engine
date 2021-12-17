@@ -92,6 +92,7 @@ void ERR_error(int function, int reason, const char *file, int line);
 
 /* tpm2-tss-engine-rand.c */
 #define TPM2TSS_F_rand_bytes    130
+#define TPM2TSS_F_rand_seed     131
 /* tpm2-tss-engine-rsa.c */
 #define TPM2TSS_F_rsa_priv_enc     140
 #define TPM2TSS_F_rsa_priv_dec     141
