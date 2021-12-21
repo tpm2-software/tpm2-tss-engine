@@ -16,6 +16,8 @@ It uses the
 interface of the TSS 2.0 for downwards communication. It supports RSA decryption
 and signatures as well as ECDSA signatures.
 
+If you are looking for a provider following the OpenSSL 3.0 provider API instead of the engine API, please head over to [tpm2-openssl](https://github.com/tpm2-software/tpm2-openssl)
+
 # Operations
 
 ## Key hierarchies
