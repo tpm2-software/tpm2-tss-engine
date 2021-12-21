@@ -57,7 +57,7 @@ rand_seed(const void *seed, int seed_len)
     size_t offset = 0;
     char *cur_data = (char*)seed;
 
-    static const size_t tpm_random_stir_max_size = 128; 
+    static const size_t tpm_random_stir_max_size = 128;
     while(offset < (size_t)seed_len) {
         size_t left = seed_len - offset;
         size_t chunk = left > tpm_random_stir_max_size ? tpm_random_stir_max_size : left;
