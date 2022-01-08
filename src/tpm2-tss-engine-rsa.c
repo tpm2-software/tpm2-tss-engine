@@ -53,6 +53,8 @@ static int (*rsa_pkey_orig_copy)(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src);
 static void (*rsa_pkey_orig_cleanup)(EVP_PKEY_CTX *ctx);
 #endif /* HAVE_OPENSSL_DIGEST_SIGN */
 
+static int (*rsa_orig_finish)(RSA *rsa);
+
 static TPM2B_DATA allOutsideInfo = {
     .size = 0,
 };
@@ -301,9 +303,13 @@ rsa_finish(RSA *rsa)
 {
     TPM2_DATA *tpm2Data = RSA_get_app_data(rsa);
 
-    if (tpm2Data != NULL)
+    if (tpm2Data != NULL) {
         OPENSSL_free(tpm2Data);
-
+        RSA_set_app_data(rsa, NULL);
+    }
+    if (rsa_orig_finish) {
+       rsa_orig_finish(rsa);
+    }
     return 1;
 }
 
@@ -764,6 +770,7 @@ init_rsa(ENGINE *e)
     RSA_meth_set1_name(rsa_methods, "TPM2TSS RSA methods");
     RSA_meth_set_priv_enc(rsa_methods, rsa_priv_enc);
     RSA_meth_set_priv_dec(rsa_methods, rsa_priv_dec);
+    rsa_orig_finish = RSA_meth_get_finish(rsa_methods);
     RSA_meth_set_finish(rsa_methods, rsa_finish);
 
     if (!ENGINE_set_RSA(e, rsa_methods))
