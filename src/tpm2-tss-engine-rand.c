@@ -107,7 +107,7 @@ rand_bytes(unsigned char *buf, int num)
         memcpy(buf, &b->buffer, b->size);
         num -= b->size;
         buf += b->size;
-        free(b);
+        Esys_Free(b);
     }
 
     esys_ctx_free(&esys_ctx);

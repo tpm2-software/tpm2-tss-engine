@@ -265,7 +265,7 @@ genkey_rsa()
 
     VERB("Key generated\n");
 
-    TPM2_DATA *tpm2Data = calloc(1, sizeof(*tpm2Data));
+    TPM2_DATA *tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
         ERR("out of memory\n");
         BN_free(e);
@@ -302,7 +302,7 @@ genkey_ecdsa()
         return NULL;
     }
 
-    TPM2_DATA *tpm2Data = calloc(1, sizeof(*tpm2Data));
+    TPM2_DATA *tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
         ERR("out of memory\n");
         EC_KEY_free(eckey);
@@ -404,11 +404,11 @@ main(int argc, char **argv)
 
     if (!tpm2tss_tpm2data_write(tpm2Data, opt.filename)) {
         ERR("Error writing file\n");
-        free(tpm2Data);
+        OPENSSL_free(tpm2Data);
         return 1;
     }
 
-    free(tpm2Data);
+    OPENSSL_free(tpm2Data);
 
     VERB("*** SUCCESS ***\n");
     return 0;
