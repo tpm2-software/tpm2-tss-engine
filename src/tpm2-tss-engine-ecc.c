@@ -284,7 +284,7 @@ ecdsa_sign(ESYS_CONTEXT *esys_ctx, ESYS_TR key_handle,
       ECDSA_SIG_free(ret);
     ret = NULL;
  out:
-    free(sig);
+    Esys_Free(sig);
     return ret;
 }
 
@@ -483,8 +483,8 @@ ecdsa_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
     r = 0;
  out:
     ECDSA_SIG_free(ecdsa_s);
-    free(digest_ptr);
-    free(validation_ptr);
+    Esys_Free(digest_ptr);
+    Esys_Free(validation_ptr);
 
     return r;
 }
@@ -785,8 +785,8 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
         OPENSSL_free(tpm2Data);
 
  end:
-    free(keyPrivate);
-    free(keyPublic);
+    Esys_Free(keyPrivate);
+    Esys_Free(keyPublic);
 
     if (parent != ESYS_TR_NONE && !parentHandle)
         Esys_FlushContext(esys_ctx, parent);

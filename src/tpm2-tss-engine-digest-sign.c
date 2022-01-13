@@ -172,7 +172,7 @@ digest_sign_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx, TPM2_DATA *tpm2data,
         /* non-TPM key - nothing to do */
         return 1;
 
-    TPM2_SIG_DATA *data = calloc(sizeof(*data), 1);
+    TPM2_SIG_DATA *data = OPENSSL_malloc(sizeof(*data));
     if (!data) {
         ERR(digest_sign_init, ERR_R_MALLOC_FAILURE);
         return 0;
@@ -181,7 +181,7 @@ digest_sign_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx, TPM2_DATA *tpm2data,
     data->seq_handle = ESYS_TR_NONE;
     data->sig_size = sig_size;
 
-    data->key = calloc(sizeof(*data->key), 1);
+    data->key = OPENSSL_malloc(sizeof(*data->key));
     if (!data->key) {
         ERR(digest_sign_init, ERR_R_MALLOC_FAILURE);
         goto error;
@@ -218,9 +218,9 @@ digest_sign_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx, TPM2_DATA *tpm2data,
         }
         if (data->key->esys_ctx)
             esys_ctx_free(&data->key->esys_ctx);
-        free(data->key);
+        OPENSSL_free(data->key);
     }
-    free(data);
+    OPENSSL_free(data);
     return 0;
 }
 
@@ -241,7 +241,7 @@ digest_sign_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src)
     TSS2_RC r;
 
     if (src_sig_data) {
-        dst_sig_data = calloc(sizeof(*dst_sig_data), 1);
+        dst_sig_data = OPENSSL_malloc(sizeof(*dst_sig_data));
         if (!dst_sig_data) {
             ERR(digest_sign_copy, ERR_R_MALLOC_FAILURE);
             return 0;
@@ -268,12 +268,12 @@ digest_sign_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src)
         EVP_PKEY_CTX_set_app_data(dst, dst_sig_data);
     }
 
-    free(context);
+    Esys_Free(context);
     return 1;
 
  error:
-    free(context);
-    free(dst_sig_data);
+    Esys_Free(context);
+    OPENSSL_free(dst_sig_data);
     return 0;
 }
 
@@ -304,9 +304,9 @@ digest_sign_cleanup(EVP_PKEY_CTX *ctx)
                 }
             }
             esys_ctx_free(&sig_data->key->esys_ctx);
-            free(sig_data->key);
+            OPENSSL_free(sig_data->key);
         }
-        free(sig_data);
+        OPENSSL_free(sig_data);
         EVP_PKEY_CTX_set_app_data(ctx, NULL);
     }
 }

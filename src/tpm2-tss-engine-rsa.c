@@ -188,7 +188,7 @@ rsa_priv_enc(int flen, const unsigned char *from, unsigned char *to, RSA *rsa,
     r = -1;
 
  out:
-    free(sig);
+    Esys_Free(sig);
     if (keyHandle != ESYS_TR_NONE) {
         if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
             Esys_TR_Close(esys_ctx, &keyHandle);
@@ -280,7 +280,7 @@ rsa_priv_dec(int flen, const unsigned char *from, unsigned char *to, RSA * rsa,
     r = -1;
 
  out:
-    free(message);
+    Esys_Free(message);
     if (keyHandle != ESYS_TR_NONE) {
         if (tpm2Data->privatetype == KEY_TYPE_HANDLE) {
             Esys_TR_Close(esys_ctx, &keyHandle);
@@ -602,8 +602,8 @@ tpm2tss_rsa_genkey(RSA *rsa, int bits, BIGNUM *e, char *password,
         OPENSSL_free(tpm2Data);
 
  end:
-    free(keyPrivate);
-    free(keyPublic);
+    Esys_Free(keyPrivate);
+    Esys_Free(keyPublic);
 
     if (parent != ESYS_TR_NONE && !parentHandle)
         Esys_FlushContext(esys_ctx, parent);
@@ -731,9 +731,9 @@ rsa_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
  error:
     r = 0;
  out:
-    free(tpm_sig);
-    free(digest_ptr);
-    free(validation_ptr);
+    Esys_Free(tpm_sig);
+    Esys_Free(digest_ptr);
+    Esys_Free(validation_ptr);
 
     return r;
 }

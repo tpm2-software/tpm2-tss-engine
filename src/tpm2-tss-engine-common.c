@@ -318,7 +318,7 @@ session_error:
 
     esys_ctx_free(&esys_ctx);
     tpm2Data->pub = *outPublic;
-    free(outPublic);
+    Esys_Free(outPublic);
 
     *tpm2Datap = tpm2Data;
     return 1;
@@ -524,8 +524,7 @@ init_tpm_parent(ESYS_CONTEXT **esys_ctx,
         }
     }
 
-    if (capabilityData != NULL)
-        free (capabilityData);
+    Esys_Free (capabilityData);
 
     if (primaryTemplate == NULL) {
         ERR(init_tpm_parent, TPM2TSS_R_UNKNOWN_ALG);
@@ -694,6 +693,6 @@ tpm2tss_tpm2data_importtpm(const char *filenamepub, const char *filenametpm,
     return 1;
 
   error:
-    free(tpm2data);
+    OPENSSL_free(tpm2data);
     return 0;
 }
