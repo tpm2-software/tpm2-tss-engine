@@ -4,24 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [next] - next
+## [1.2.0-rc0] - 2022-01-14
+### Changed or Fixed
+- Updated minimal version of tpm2-tss to 2.4.x
+- Fix encoding of emptyauth
+- Fix some memory leaks
+- Change parent handle to BIGNUM
+
 ### Added
+- Use of restricted keys for signing
+- StirRandom
+- Run tests using swtpm
 - The ability to import key blobs from things like the tpm2-tools project.
+- Compatibility with openssl >=1.1.x
+- Support for ECDH
 - Fix QNX build issues.
 - Only set -Werror for non-release builds.
+- Additional checks on TPM responses
+- CODE_OF_CONDUCT
 
-## [1.1.0-rc1] - 2020-07-20
+## [1.1.0] - 2020-11-20
 ### Added
 - Configure option for ptpm tests
 - Configure script AX_CHECK_ENABLE_DEBUG
 - Option for setting tcti on executable
-
-### Changed
-- Fix manpages for -P/--parent option and correct engine name
-- Fix TCTI env variable handling
-
-## [1.1.0-rc0] - 2020-01-10
-### Added
 - TCTI-env variable used by default
 - Support for parent key passwords
 - openssl.cnf sample file
@@ -36,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix EC param info (using named curve format)
 - Use tpm2-tools 4.X stable branch for integration tests
 - Use libtss2-tctildr.so instead of custom code for tcti setup
+- Fix manpages for -P/--parent option and correct engine name
+- Fix TCTI env variable handling
 
 ## [1.0.0] - 2019-04-04
 ### Added
