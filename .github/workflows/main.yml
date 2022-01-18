@@ -14,13 +14,15 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
-      - name: Launch Container
-        env:
+      - name: Launch Action
+        uses:
+          tpm2-software/ci/runCI@main
+        with:
           DOCKER_IMAGE: "${{ matrix.DOCKER_IMAGE }}"
           TPM2TSS_BRANCH: "${{ matrix.TPM2TSS_BRANCH }}"
           TPM2TOOLS_BRANCH: "${{ matrix.TPM2TOOLS_BRANCH }}"
           CC: "${{ matrix.CC }}"
-        run: ./.ci/ci.sh
+          PROJECT_NAME: ${{ github.event.repository.name }}
       - name: failure
         if: ${{ failure() }}
         run: cat build/test-suite.log || true
@@ -42,13 +44,15 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Check out repository
         uses: actions/checkout@v2
-      - name: Launch Container
-        env:
+      - name: Launch Action
+        uses:
+          tpm2-software/ci/runCI@main
+        with:
+          PROJECT_NAME: ${{ github.event.repository.name }}
           DOCKER_IMAGE: ${{ matrix.ARCH }}
           TPM2TSS_BRANCH: "${{ matrix.TPM2TSS_BRANCH }}"
           TPM2TOOLS_BRANCH: "${{ matrix.TPM2TOOLS_BRANCH }}"
           CC: gcc
-        run: ./.ci/ci.sh
       - name: failure
         if: ${{ failure() }}
         run: find -name test-suite.log | xargs cat || true
@@ -58,8 +62,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
-      - name: Launch Container
-        env:
+      - name: Launch Coverity Action
+        uses:
+          tpm2-software/ci/coverityScan@main
+        with:
+          PROJECT_NAME: ${{ github.event.repository.name }}
           ENABLE_COVERITY: true
           TPM2TSS_BRANCH: "3.0.x"
           TPM2TOOLS_BRANCH: "4.0"
@@ -69,7 +76,6 @@ jobs:
           CC: gcc
           COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
           COVERITY_SUBMISSION_EMAIL: william.c.roberts@intel.com
-        run: ./.ci/ci.sh
   whitespace-check:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && !contains(github.ref, 'coverity_scan')
