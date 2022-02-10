@@ -2,7 +2,9 @@
 
 set -eufx
 
-echo -n "abcde12345abcde12345">mydata.txt
+# Generate 2k + a bit of data
+dd if=/dev/zero of=mydata.txt count=4 bs=512 status=none
+echo -n "abcde12345abcde12345">>mydata.txt
 
 # Create a Primary key pair
 echo "Generating primary key"
