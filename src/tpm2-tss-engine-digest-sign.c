@@ -106,21 +106,24 @@ digest_update(EVP_MD_CTX *ctx, const void *data, size_t count)
 {
     EVP_PKEY_CTX *pctx = EVP_MD_CTX_pkey_ctx(ctx);
     TPM2_SIG_DATA *sig_data = EVP_PKEY_CTX_get_app_data(pctx);
+    const uint8_t *current_data = data;
     TSS2_RC r;
 
     DBG("digest_update %p %p\n", pctx, ctx);
 
-    TPM2B_MAX_BUFFER digest_data = { .size = count };
-    if (count > sizeof(digest_data.buffer)) {
-        ERR(digest_update, TPM2TSS_R_DIGEST_TOO_LARGE);
-        return 0;
-    }
-    memcpy(&digest_data.buffer[0], data, count);
+    while (count > 0) {
+        TPM2B_MAX_BUFFER digest_data = { .size = count };
+        if (digest_data.size > sizeof(digest_data.buffer))
+            digest_data.size = sizeof(digest_data.buffer);
+        memcpy(&digest_data.buffer[0], current_data, digest_data.size);
+        current_data += digest_data.size;
+        count -= digest_data.size;
 
-    r = Esys_SequenceUpdate(sig_data->key->esys_ctx, sig_data->seq_handle,
-                            ESYS_TR_PASSWORD, ESYS_TR_NONE,
-                            ESYS_TR_NONE, &digest_data);
-    ERRchktss(digest_update, r, return 0);
+        r = Esys_SequenceUpdate(sig_data->key->esys_ctx, sig_data->seq_handle,
+                                ESYS_TR_PASSWORD, ESYS_TR_NONE,
+                                ESYS_TR_NONE, &digest_data);
+        ERRchktss(digest_update, r, return 0);
+    }
 
     return 1;
 }
