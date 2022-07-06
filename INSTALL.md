@@ -35,7 +35,7 @@ sudo apt -y install \
   pandoc \
   doxygen
 
-git clone --depth=1 http://www.github.com/tpm2-software/tpm2-tss
+git clone http://www.github.com/tpm2-software/tpm2-tss
 cd tpm2-tss
 ./bootstrap
 ./configure
@@ -50,7 +50,7 @@ sudo apt -y install  \
   realpath \
   ss
 
-git clone --depth=1 http://github.com/tpm2-software/tpm2-tools
+git clone http://github.com/tpm2-software/tpm2-tools
 cd tpm2-tools
 ./bootstrap
 ./configure
@@ -66,7 +66,7 @@ sudo cp ibmtpm/src/tpm_server /usr/local/bin
 
 # Building from source
 ```
-git clone --depth=1 http://www.github.com/tpm2-software/tpm2-tss-engine
+git clone http://www.github.com/tpm2-software/tpm2-tss-engine
 ./bootstrap
 ./configure
 make -j$(nproc)
