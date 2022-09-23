@@ -184,6 +184,8 @@ AC_ARG_WITH([device],
             [with_device_set=no])
 AM_CONDITIONAL([TESTDEVICE],[test "x$with_device_set" = xyes])
 
+AC_CHECK_FUNC([backtrace_symbols_fd],[AC_DEFINE([HAVE_EXECINFO],[1], ['Define to 1 if you have the <execinfo.h> header file.'])])
+
 # Integration test with simulator
 AS_IF([test "x$enable_integration" = xyes && test "x$with_device_set" = xno],
       [integration_args=""

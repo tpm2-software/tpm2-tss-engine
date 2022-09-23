@@ -7,7 +7,9 @@
 #include "tpm2-tss-engine.h"
 #include "tpm2-tss-engine-common.h"
 
+#ifdef HAVE_EXECINFO
 #include <execinfo.h>
+#endif
 #include <stdio.h>
 #include <unistd.h>
 #include <setjmp.h>
@@ -17,8 +19,10 @@ TSS2_RC
 __wrap_Esys_Initialize()
 {
     printf("Esys_Initialize called\n");
+#ifdef HAVE_EXECINFO
     void* b[128];
     backtrace_symbols_fd(b, backtrace(b, sizeof(b)/sizeof(b[0])), STDOUT_FILENO);
+#endif
     return -1;
 }
     
