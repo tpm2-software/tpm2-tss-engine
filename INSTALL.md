@@ -57,9 +57,9 @@ cd tpm2-tools
 make -j$(nproc)
 sudo make install
 
-wget https://download.01.org/tpm2/ibmtpm974.tar.gz
+wget https://downloads.sourceforge.net/project/ibmswtpm2/ibmtpm1682.tar.gz
 mkdir ibmtpm
-tar axf ibmtpm974.tar.gz -C ibmtpm
+tar axf ibmtpm1682.tar.gz -C ibmtpm
 make -C ibmtpm/src -j$(nproc)
 sudo cp ibmtpm/src/tpm_server /usr/local/bin
 ```
