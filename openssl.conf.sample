@@ -9,7 +9,7 @@ tpm2tss = tpm2tss_section
 [tpm2tss_section]
 engine_id = tpm2tss
 dynamic_path = /usr/lib/engines-1.1/libtpm2tss.so
-default_algorithms = RSA,ECDSA
+default_algorithms = RSA
 init = 1
 #SET_TCTI = <TCTI_options>
 #SET_OWNERAUTH = <could_set_password_here, but then it's readable>
