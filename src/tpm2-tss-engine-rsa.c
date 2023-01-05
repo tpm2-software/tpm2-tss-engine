@@ -251,6 +251,9 @@ rsa_priv_dec(int flen, const unsigned char *from, unsigned char *to, RSA * rsa,
         inScheme.scheme = TPM2_ALG_OAEP;
         inScheme.details.oaep.hashAlg = TPM2_ALG_SHA1;
         break;
+    case RSA_NO_PADDING:
+        inScheme.scheme = TPM2_ALG_NULL;
+        break;
     default:
         ERR(rsa_priv_dec, TPM2TSS_R_PADDING_UNKNOWN);
         goto error;
