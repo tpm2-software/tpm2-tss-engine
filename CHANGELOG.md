@@ -4,12 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0-rc0] - 2022-01-14
-### Changed or Fixed
+## [1.2.0-rc1] - 2023-01-05
+### Fixed
 - Updated minimal version of tpm2-tss to 2.4.x
 - Fix encoding of emptyauth
 - Fix some memory leaks
-- Change parent handle to BIGNUM
+- Parent handle issues with signed representation by switching parent handle to BIGNUM.
+- Fixed RSA_NO_PADDING modes with OpenSSL 1.1.1
+- Fixed autogen (bootstrap) call from release package by embedding VERSION file.
 
 ### Added
 - Use of restricted keys for signing
@@ -18,10 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The ability to import key blobs from things like the tpm2-tools project.
 - Compatibility with openssl >=1.1.x
 - Support for ECDH
-- Fix QNX build issues.
+- QNX support.
 - Only set -Werror for non-release builds.
 - Additional checks on TPM responses
 - CODE_OF_CONDUCT
+- SECURITY reporting instructions
 
 ## [1.1.0] - 2020-11-20
 ### Added
