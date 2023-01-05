@@ -3,6 +3,8 @@
 
 set -exo pipefail
 
+git config --global --add safe.directory /workspace/tpm2-tss-engine
+
 $DOCKER_BUILD_DIR/.ci/get_deps.sh "$(dirname $DOCKER_BUILD_DIR)"
 
 pushd $DOCKER_BUILD_DIR
