@@ -34,10 +34,17 @@ if [ -z "$INTEGRATION_DEVICE" ]; then
         simulator_port="$(shuf --input-range 1024-65534 --head-count 1)"
         echo "Starting simulator on port $simulator_port"
         case "$simulator_binary" in
-            *swtpm) "$simulator_binary" socket --tpm2 --server port="$simulator_port" \
+            *swtpm)
+                if $simulator_binary socket --print-capabilities --sec-comp; then
+                    "$simulator_binary" socket --tpm2 --server port="$simulator_port" \
                                                --ctrl type=tcp,port="$(( simulator_port + 1 ))" \
                                                --flags not-need-init --tpmstate dir="$tmp_dir" \
-					       --seccomp "action=none" &;;
+					       --seccomp "action=none" &
+                else
+                    "$simulator_binary" socket --tpm2 --server port="$simulator_port" \
+                                               --ctrl type=tcp,port="$(( simulator_port + 1 ))" \
+                                               --flags not-need-init --tpmstate dir="$tmp_dir" &
+                fi;;
             *tpm_server) "$simulator_binary" -port "$simulator_port" &;;
         esac
         simulator_pid="$!"
