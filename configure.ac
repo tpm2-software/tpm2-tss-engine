@@ -116,13 +116,19 @@ PKG_CHECK_MODULES([CRYPTO], [libcrypto >= 1.0.2g],
 PKG_CHECK_MODULES([TSS2_ESYS], [tss2-esys >= 2.3])
 PKG_CHECK_MODULES([TSS2_MU], [tss2-mu])
 PKG_CHECK_MODULES([TSS2_TCTILDR], [tss2-tctildr])
+
 AC_CHECK_LIB([crypto], EC_KEY_METHOD_set_compute_key,
       [AM_CONDITIONAL([HAVE_OPENSSL_ECDH], true)],
       [AM_CONDITIONAL([HAVE_OPENSSL_ECDH], false)])
+
+AC_ARG_ENABLE([digestsign],
+              [AS_HELP_STRING([--disable-digestsign],
+                              [Disable support for digest and sign methods, helps with TPM unsupported hash algorithms.])],,
+              [enable_digestsign=yes])
 AC_CHECK_LIB([crypto], EVP_PKEY_meth_set_digest_custom,
-      [AM_CONDITIONAL([HAVE_OPENSSL_DIGEST_SIGN], true)],
+      [AM_CONDITIONAL([HAVE_OPENSSL_DIGEST_SIGN], [test "x$enable_digestsign" != "xno"])],
       [AM_CONDITIONAL([HAVE_OPENSSL_DIGEST_SIGN], false)])
-AS_IF([test "x$ac_cv_lib_crypto_EVP_PKEY_meth_set_digest_custom" = xyes],
+AS_IF([test "x$ac_cv_lib_crypto_EVP_PKEY_meth_set_digest_custom" = xyes && test "x$enable_digestsign" = "xyes"],
       [AC_DEFINE([HAVE_OPENSSL_DIGEST_SIGN], [1],
                  Have required functionality from OpenSSL to support digest and sign)])
 
