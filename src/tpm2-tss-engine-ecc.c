@@ -54,6 +54,9 @@ EC_KEY_METHOD *ecc_methods = NULL;
 #ifdef HAVE_OPENSSL_DIGEST_SIGN
 static int (*ecdsa_pkey_orig_copy)(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src);
 static void (*ecdsa_pkey_orig_cleanup)(EVP_PKEY_CTX *ctx);
+static int (*sm2_digest_custom_default) (EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx) = NULL;
+static int (*pkey_sm2_sign_default) (EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
+                         const unsigned char *tbs, size_t tbslen) = NULL;
 #endif /* HAVE_OPENSSL_DIGEST_SIGN */
 
 static TPM2B_DATA allOutsideInfo = {
@@ -238,7 +241,7 @@ ecdsa_sign(ESYS_CONTEXT *esys_ctx, ESYS_TR key_handle,
 	   TPM2_ALG_ID hash_alg)
 {
     TPMT_SIG_SCHEME inScheme = {
-      .scheme = TPM2_ALG_ECDSA,
+      .scheme = (hash_alg == TPM2_ALG_SM3_256) ? TPM2_ALG_SM2 : TPM2_ALG_ECDSA,
       .details.ecdsa.hashAlg = hash_alg,
     };
     BIGNUM *bns = NULL, *bnr = NULL;
@@ -360,7 +363,10 @@ ecdsa_ec_key_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 	    dgst_len = SHA_DIGEST_LENGTH;
     } else if (dgst_len == SHA256_DIGEST_LENGTH ||
 	(curve_len <= SHA256_DIGEST_LENGTH && dgst_len > SHA256_DIGEST_LENGTH)) {
-	    hash_alg = TPM2_ALG_SHA256;
+        if (EC_GROUP_get_curve_name(EC_KEY_get0_group(eckey)) == NID_sm2)
+            hash_alg = TPM2_ALG_SM3_256;
+        else
+	        hash_alg = TPM2_ALG_SHA256;
 	    dgst_len = SHA256_DIGEST_LENGTH;
     } else if (dgst_len == SHA384_DIGEST_LENGTH ||
 	(curve_len <= SHA384_DIGEST_LENGTH && dgst_len > SHA384_DIGEST_LENGTH)) {
@@ -515,6 +521,9 @@ populate_ecc(EC_KEY *key)
         break;
     case TPM2_ECC_NIST_P384:
         nid = EC_curve_nist2nid("P-384");
+        break;
+    case TPM2_ECC_SM2_P256:
+        nid = NID_sm2;
         break;
     default:
         nid = -1;
@@ -796,6 +805,42 @@ tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
     return (r == TSS2_RC_SUCCESS);
 }
 
+/** Customize the pkey_sm2_sign interface
+ *
+ * Customize the pkey_sm2_sign interface. When there is a tpm key extension value, call the ecdsa_ec_key_sign interface to sign.
+ * @retval 1 on success
+ * @retval 0 on failure
+ */
+static int pkey_sm2_sign(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
+                         const unsigned char *tbs, size_t tbslen)
+{
+    EC_KEY *ec = EVP_PKEY_get0_EC_KEY(EVP_PKEY_CTX_get0_pkey(ctx));
+
+    if (tpm2tss_ecc_getappdata(ec) == NULL) {
+        // call pkey_sm2_sign_default
+        return pkey_sm2_sign_default(ctx, sig, siglen, tbs, tbslen);
+    }
+    else {
+        // call tpm sig function
+        const int sig_sz = ECDSA_size(ec);
+        if (sig_sz <= 0) {
+            return 0;
+        }
+        if (sig == NULL) {
+            *siglen = (size_t)sig_sz;
+            return 1;
+        }
+        if (*siglen < (size_t)sig_sz) return 0;
+        ECDSA_SIG *sig_res = ecdsa_ec_key_sign(tbs, tbslen, NULL, NULL, ec);
+        int siglen_temp = i2d_ECDSA_SIG(sig_res, &sig);
+        ECDSA_SIG_free(sig_res);
+        if (siglen_temp < 0) return 0;
+        *siglen = siglen_temp;
+    }
+
+    return 1;
+}
+
 /** Initialize the tpm2tss engine's ecc submodule
  *
  * Initialize the tpm2tss engine's submodule by setting function pointer.
@@ -869,6 +914,22 @@ init_ecc(ENGINE *e)
     EVP_PKEY_meth_set_signctx(pkey_ecc_methods, NULL, ecdsa_signctx);
     EVP_PKEY_meth_set_digest_custom(pkey_ecc_methods, ecdsa_digest_custom);
     EVP_PKEY_meth_add0(pkey_ecc_methods);
+
+    /* add engine for sm2*/
+    EVP_PKEY_METHOD *pkey_sm2_methods = EVP_PKEY_meth_new(EVP_PKEY_SM2, 0);
+    if (pkey_sm2_methods == NULL)
+        return 0;
+    EVP_PKEY_METHOD *pkey_orig_sm2_methods = EVP_PKEY_meth_find(EVP_PKEY_SM2);
+    if (pkey_orig_sm2_methods == NULL)
+        return 0;
+    EVP_PKEY_meth_copy(pkey_sm2_methods, pkey_orig_sm2_methods);
+
+    EVP_PKEY_meth_get_digest_custom(pkey_orig_sm2_methods, &sm2_digest_custom_default);
+    EVP_PKEY_meth_get_sign(pkey_orig_sm2_methods, NULL, &pkey_sm2_sign_default);
+
+    EVP_PKEY_meth_set_digest_custom(pkey_sm2_methods, sm2_digest_custom_default);
+    EVP_PKEY_meth_set_sign(pkey_sm2_methods, NULL, pkey_sm2_sign);
+    EVP_PKEY_meth_add0(pkey_sm2_methods);
 #endif /* HAVE_OPENSSL_DIGEST_SIGN */
 
     return 1;
