@@ -52,7 +52,7 @@ char *help =
     "Arguments:\n"
     "    <filename>      storage for the encrypted private key\n"
     "Options:\n"
-    "    -a, --alg       public key algorithm (rsa, ecdsa) (default: rsa)\n"
+    "    -a, --alg       public key algorithm (rsa, ecdsa, sm2) (default: rsa)\n"
     "    -c, --curve     curve for ecc (default: nist_p256)\n"
     "    -e, --exponent  exponent for rsa (default: 65537)\n"
     "    -h, --help      print help\n"
@@ -147,6 +147,10 @@ parse_opts(int argc, char **argv)
                 break;
             } else if (strcasecmp(optarg, "ecdsa") == 0) {
                 opt.alg = TPM2_ALG_ECDSA;
+                break;
+            } else if (strcasecmp(optarg, "sm2") == 0) {
+                opt.alg = TPM2_ALG_ECDSA;
+                opt.curve = TPM2_ECC_SM2_P256;
                 break;
             } else {
                 ERR("Unknown algorithm.\n");
@@ -387,7 +391,10 @@ main(int argc, char **argv)
         tpm2Data = genkey_rsa();
         break;
     case TPM2_ALG_ECDSA:
-        VERB("Generating the ecdsa key\n");
+        if (opt.curve == TPM2_ECC_SM2_P256)
+            VERB("Generating the sm2 key\n");
+        else
+            VERB("Generating the ecdsa key\n");
         tpm2Data = genkey_ecdsa();
         break;
     default:
