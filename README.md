@@ -115,6 +115,15 @@ To export the public key use:
 openssl ec -engine tpm2tss -inform engine -in mykey -pubout -outform pem -out mykey.pub
 ```
 
+## The TPM Key
+The TPM key may be provided as file name, like "mykey" in the examples above.
+Additionally, the special file name "-" is supported to read the key from stdin
+and write it to stdout after generation.
+Providing the key itself instead of the filename is also supported for reading.
+
+This allows engine-users to avoid the use of temporary files with all its
+issues and disadvantages (cleanup on error, mktemp()).
+
 ## Self Signed certificate generate operation 
 The following sequence of commands creates self signed certificate using TPM
 key. Openssl command sets tpm2tss as engine and generates a self signed

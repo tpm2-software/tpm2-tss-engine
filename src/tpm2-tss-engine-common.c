@@ -138,7 +138,13 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
     uint8_t pubbuf[sizeof(tpm2Data->pub)];
     size_t privbuf_len = 0, pubbuf_len = 0;
 
-    if ((bio = BIO_new_file(filename, "w")) == NULL) {
+    if (filename[0] == '-' && filename[1] == 0) {
+        bio = BIO_new_fp(stdout, BIO_NOCLOSE);
+    } else {
+        bio = BIO_new_file(filename, "w");
+    }
+
+    if (bio == NULL) {
         ERR(tpm2tss_tpm2data_write, TPM2TSS_R_FILE_WRITE);
         goto error;
     }
@@ -349,7 +355,18 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
     char type_oid[64];
     BIGNUM *bn_parent;
 
-    if ((bio = BIO_new_file(filename, "r")) == NULL) {
+    if (filename[0] == '-' && filename[1] == 0) {
+        bio = BIO_new_fp(stdin, BIO_NOCLOSE);
+    } else {
+        bio = BIO_new_file(filename, "r");
+        if (bio == NULL) {
+            const char *dashes = strstr(filename, "-----BEGIN");
+            if (dashes)
+                bio = BIO_new_mem_buf(dashes, strlen(dashes));
+        }
+    }
+
+    if (bio == NULL) {
         ERR(tpm2tss_tpm2data_read, TPM2TSS_R_FILE_READ);
         goto error;
     }
