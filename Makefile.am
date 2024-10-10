@@ -217,8 +217,10 @@ EXTRA_DIST += \
     man/tpm2tss_ecc_genkey.3.md \
     man/tpm2tss_ecc_getappdata.3.md
 
+if HAVE_PANDOC
 CLEANFILES += \
     $(dist_man_MANS)
+endif
 
 ### Bash Completion
 bash_completiondir = $(completionsdir)
