@@ -347,6 +347,11 @@ bind(ENGINE *e, const char *id)
         goto end;
     }
 
+    if (!ENGINE_set_load_pubkey_function(e, loadkey)) {
+        DBG("ENGINE_set_load_pubkey_function failed\n");
+        goto end;
+    }
+
     if (!ENGINE_set_destroy_function(e, destroy_engine)) {
         DBG("ENGINE_set_destroy_function failed\n");
         goto end;
@@ -359,6 +364,11 @@ bind(ENGINE *e, const char *id)
 
     if (!ENGINE_set_cmd_defns(e, cmd_defns)) {
         DBG("ENGINE_set_cmd_defns failed\n");
+        goto end;
+    }
+
+    if (!add_sm2_asn1_meths()) {
+        DBG("created sm2_asn1_meths failed\n");
         goto end;
     }
 

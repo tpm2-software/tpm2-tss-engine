@@ -87,6 +87,8 @@ int
 tpm2tss_ecc_genkey(EC_KEY *key, TPMI_ECC_CURVE curve, const char *password,
                    TPM2_HANDLE parentHandle);
 
+int add_sm2_asn1_meths(void);
+
 TPM2_DATA *
 #if OPENSSL_VERSION_NUMBER < 0x10100000
 tpm2tss_ecc_getappdata(EC_KEY *key);
