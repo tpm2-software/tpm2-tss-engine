@@ -135,7 +135,13 @@ TESTS_SHELL += test/ecdh.sh
 endif
 if HAVE_OPENSSL_DIGEST_SIGN
 TESTS_SHELL += test/ecdsa-restricted.sh \
-               test/rsasign_restricted.sh
+               test/rsasign_restricted.sh \
+               test/sm2_csr.sh \
+               test/sm2sign.sh \
+               test/sm2sign_emptyauth.sh \
+               test/sm2sign_handle_flush.sh \
+               test/sm2sign_importtpmparent.sh \
+               test/sm2sign_parent.sh
 endif
 EXTRA_DIST += $(TESTS_SHELL) test/neg-handle.pem
 TEST_EXTENSIONS = .sh

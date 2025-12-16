@@ -79,6 +79,9 @@ digest_init(EVP_MD_CTX *ctx, TPM2_SIG_DATA *data)
     case NID_sha512:
         data->hash_alg = TPM2_ALG_SHA512;
         break;
+    case NID_sm3:
+        data->hash_alg = TPM2_ALG_SM3_256;
+        break;
     default:
         ERR(digest_init, TPM2TSS_R_UNKNOWN_ALG);
         return 0;

@@ -214,6 +214,12 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
     ESYS_TR keyHandle = ESYS_TR_NONE;
     ESYS_CONTEXT *esys_ctx = NULL;
     TPM2B_PUBLIC *outPublic;
+    TPMT_SYM_DEF sym = {
+        .algorithm = TPM2_ALG_AES,
+        .keyBits = { .sym = 128 },
+        .mode = { .sym = TPM2_ALG_CFB }
+    };
+    TPM2_ALG_ID hash_alg = TPM2_ALG_SHA256;
 
     tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
     if (tpm2Data == NULL) {
@@ -247,15 +253,16 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
         goto error;
     }
 
+    if (outPublic->publicArea.parameters.eccDetail.curveID == TPM2_ECC_SM2_P256) {
+        sym.algorithm = TPM2_ALG_SM4;
+        hash_alg = TPM2_ALG_SM3_256;
+    }
+
     /* If the persistent key has the NODA flag set, we check whether it does
        have an empty authValue. If NODA is not set, then we don't check because
        that would increment the DA lockout counter */
     if ((outPublic->publicArea.objectAttributes & TPMA_OBJECT_NODA) != 0) {
         ESYS_TR session;
-        TPMT_SYM_DEF sym = {.algorithm = TPM2_ALG_AES,
-                            .keyBits = {.aes = 128},
-                            .mode = {.aes = TPM2_ALG_CFB}
-        };
 
         /* Esys_StartAuthSession() and session handling use OpenSSL for random
            bytes and thus might end up inside this engine again. This becomes
@@ -271,7 +278,7 @@ tpm2tss_tpm2data_readtpm(uint32_t handle, TPM2_DATA **tpm2Datap)
            very cheap command. */
         r = Esys_StartAuthSession(esys_ctx, ESYS_TR_NONE, keyHandle,
                                   ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
-                                  NULL, TPM2_SE_HMAC, &sym, TPM2_ALG_SHA256,
+                                  NULL, TPM2_SE_HMAC, &sym, hash_alg,
                                   &session);
         /* Though this response code is sub-optimal, it's the only way to
            detect the bug in ESYS. */
