@@ -265,14 +265,7 @@ genkey_rsa()
 
     VERB("Key generated\n");
 
-    TPM2_DATA *tpm2Data = OPENSSL_malloc(sizeof(*tpm2Data));
-    if (tpm2Data == NULL) {
-        ERR("out of memory\n");
-        BN_free(e);
-        RSA_free(rsa);
-        return NULL;
-    }
-    memcpy(tpm2Data, RSA_get_app_data(rsa), sizeof(*tpm2Data));
+    TPM2_DATA *tpm2Data = RSA_get_app_data(rsa);
 
     BN_free(e);
     RSA_free(rsa);
