@@ -163,10 +163,7 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
         goto error;
     }
     tpk->type = OBJ_txt2obj(OID_loadableKey, 1);
-    tpk->parent = ASN1_INTEGER_new();
-    tpk->privkey = ASN1_OCTET_STRING_new();
-    tpk->pubkey = ASN1_OCTET_STRING_new();
-    if (!tpk->type || !tpk->privkey || !tpk->pubkey || !tpk->parent) {
+    if (!tpk->type) {
         ERR(tpm2tss_tpm2data_write, ERR_R_MALLOC_FAILURE);
         goto error;
     }
