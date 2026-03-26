@@ -717,12 +717,31 @@ rsa_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
         return 0;
     }
 
-    if (!digest_finish(sig_data, &digest_ptr, &validation_ptr))
-        return 0;
-
-    r = Esys_Sign(sig_data->key->esys_ctx, sig_data->key->key_handle,
-                  ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                  digest_ptr, &in_scheme, validation_ptr, &tpm_sig);
+    /* OpenSSL 3.x does not honour EVP_MD_CTX_set_update_fn, so the TPM
+     * sequence (Esys_SequenceUpdate/Complete) never receives data and
+     * digest_finish returns SHA-256 of empty string. For unrestricted
+     * keys we finalize the digest via EVP_DigestFinal_ex and pass it
+     * directly to Esys_Sign with a NULL validation ticket.
+     */
+    {
+        unsigned char md_buf[EVP_MAX_MD_SIZE];
+        unsigned int md_len = 0;
+        TPM2B_DIGEST local_digest = { .size = 0 };
+        TPMT_TK_HASHCHECK local_validation = {
+            .tag = TPM2_ST_HASHCHECK,
+            .hierarchy = TPM2_RH_NULL,
+            .digest = { .size = 0 }
+        };
+        if (!EVP_DigestFinal_ex(mctx, md_buf, &md_len))
+            return 0;
+        if (md_len > sizeof(local_digest.buffer))
+            return 0;
+        local_digest.size = md_len;
+        memcpy(local_digest.buffer, md_buf, md_len);
+        r = Esys_Sign(sig_data->key->esys_ctx, sig_data->key->key_handle,
+                      ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                      &local_digest, &in_scheme, &local_validation, &tpm_sig);
+    }
     ERRchktss(rsa_signctx, r, goto error);
 
     memcpy(sig, tpm_sig->signature.rsassa.sig.buffer, sig_data->sig_size);
