@@ -5,6 +5,10 @@ set -exo pipefail
 
 git config --global --add safe.directory /workspace/tpm2-tss-engine
 
+# some distros use different prefix and path settings, rather than
+# configure all that, this simply fixes the problem.
+export LD_LIBRARY_PATH="/usr/local/lib"
+
 $DOCKER_BUILD_DIR/.ci/get_deps.sh "$(dirname $DOCKER_BUILD_DIR)"
 
 pushd $DOCKER_BUILD_DIR
