@@ -52,7 +52,7 @@ EC_KEY_METHOD *ecc_methods = NULL;
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
 #ifdef HAVE_OPENSSL_DIGEST_SIGN
-static int (*ecdsa_pkey_orig_copy)(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src);
+static int (*ecdsa_pkey_orig_copy)(EVP_PKEY_CTX *dst, OSSL_CONST EVP_PKEY_CTX *src);
 static void (*ecdsa_pkey_orig_cleanup)(EVP_PKEY_CTX *ctx);
 #endif /* HAVE_OPENSSL_DIGEST_SIGN */
 
@@ -405,7 +405,7 @@ ecdsa_ec_key_sign(const unsigned char *dgst, int dgst_len, const BIGNUM *inv,
 
 #ifdef HAVE_OPENSSL_DIGEST_SIGN
 static int
-ecdsa_pkey_copy(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src)
+ecdsa_pkey_copy(EVP_PKEY_CTX *dst, OSSL_CONST EVP_PKEY_CTX *src)
 {
     if (ecdsa_pkey_orig_copy && !ecdsa_pkey_orig_copy(dst, src))
         return 0;
@@ -427,7 +427,7 @@ static int
 ecdsa_digest_custom(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
 {
     EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
-    EC_KEY *eckey = EVP_PKEY_get0_EC_KEY(pkey);
+    const EC_KEY *eckey = EVP_PKEY_get0_EC_KEY(pkey);
     TPM2_DATA *tpm2data = tpm2tss_ecc_getappdata(eckey);
 
     DBG("ecdsa_digest_custom %p %p\n", ctx, mctx);

@@ -192,8 +192,20 @@ int
 digest_sign_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx, TPM2_DATA *tpm2data,
                  size_t sig_size);
 int
-digest_sign_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src);
+digest_sign_copy(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src);
 void
 digest_sign_cleanup(EVP_PKEY_CTX *ctx);
+
+/*
+ * OpenSSL APIs change const values between legacy
+ * 1.x and the newer 3.x version. OpenSSL 3 and above
+ * uses const in places that 1.x doesn't. Lets just
+ * match what is expected.
+ */
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#define OSSL_CONST const
+#else
+#define OSSL_CONST
+#endif
 
 #endif /* TPM2_TSS_ENGINE_COMMON_H */
