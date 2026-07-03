@@ -236,9 +236,9 @@ digest_sign_init(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx, TPM2_DATA *tpm2data,
  * @retval 0 on failure
  */
 int
-digest_sign_copy(EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src)
+digest_sign_copy(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src)
 {
-    TPM2_SIG_DATA *src_sig_data = EVP_PKEY_CTX_get_app_data(src);
+    TPM2_SIG_DATA *src_sig_data = EVP_PKEY_CTX_get_app_data((EVP_PKEY_CTX *)src);
     TPMS_CONTEXT *context = NULL;
     TPM2_SIG_DATA *dst_sig_data = NULL;
     TSS2_RC r;

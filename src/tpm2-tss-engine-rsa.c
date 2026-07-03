@@ -49,7 +49,7 @@ RSA_METHOD *rsa_methods = NULL;
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000 */
 
 #ifdef HAVE_OPENSSL_DIGEST_SIGN
-static int (*rsa_pkey_orig_copy)(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src);
+static int (*rsa_pkey_orig_copy)(EVP_PKEY_CTX *dst, OSSL_CONST EVP_PKEY_CTX *src);
 static void (*rsa_pkey_orig_cleanup)(EVP_PKEY_CTX *ctx);
 #endif /* HAVE_OPENSSL_DIGEST_SIGN */
 
@@ -637,7 +637,7 @@ RSA_METHOD rsa_methods = {
 
 #ifdef HAVE_OPENSSL_DIGEST_SIGN
 static int
-rsa_pkey_copy(EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src)
+rsa_pkey_copy(EVP_PKEY_CTX *dst, OSSL_CONST EVP_PKEY_CTX *src)
 {
     if (rsa_pkey_orig_copy && !rsa_pkey_orig_copy(dst, src))
         return 0;
@@ -659,7 +659,7 @@ static int
 rsa_digest_custom(EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx)
 {
     EVP_PKEY *pkey = EVP_PKEY_CTX_get0_pkey(ctx);
-    RSA *rsa = EVP_PKEY_get0_RSA(pkey);
+    const RSA *rsa = EVP_PKEY_get0_RSA(pkey);
     TPM2_DATA *tpm2data = RSA_get_app_data(rsa);
 
     DBG("rsa_digest_custom %p %p\n", ctx, mctx);
