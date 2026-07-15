@@ -163,10 +163,7 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
         goto error;
     }
     tpk->type = OBJ_txt2obj(OID_loadableKey, 1);
-    tpk->parent = ASN1_INTEGER_new();
-    tpk->privkey = ASN1_OCTET_STRING_new();
-    tpk->pubkey = ASN1_OCTET_STRING_new();
-    if (!tpk->type || !tpk->privkey || !tpk->pubkey || !tpk->parent) {
+    if (!tpk->type) {
         ERR(tpm2tss_tpm2data_write, ERR_R_MALLOC_FAILURE);
         goto error;
     }
@@ -182,6 +179,8 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
         BN_set_word(bn_parent, TPM2_RH_OWNER);
     }
     BN_to_ASN1_INTEGER(bn_parent, tpk->parent);
+    BN_free(bn_parent);
+
     ASN1_STRING_set(tpk->privkey, &privbuf[0], privbuf_len);
     ASN1_STRING_set(tpk->pubkey, &pubbuf[0], pubbuf_len);
 
@@ -195,6 +194,8 @@ tpm2tss_tpm2data_write(const TPM2_DATA *tpm2Data, const char *filename)
         BIO_free(bio);
     if (tpk)
         TSSPRIVKEY_free(tpk);
+    if (bn_parent)
+        BN_free(bn_parent);
     return 0;
 }
 
@@ -354,7 +355,7 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
     TSSPRIVKEY *tpk = NULL;
     TPM2_DATA *tpm2Data = NULL;
     char type_oid[64];
-    BIGNUM *bn_parent;
+    BIGNUM *bn_parent = NULL;
 
     if ((bio = BIO_new_file(filename, "r")) == NULL) {
         ERR(tpm2tss_tpm2data_read, TPM2TSS_R_FILE_READ);
@@ -389,6 +390,8 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
     } else {
         tpm2Data->parent = BN_get_word(bn_parent);
     }
+    BN_free(bn_parent);
+
     if (tpm2Data->parent == 0)
         tpm2Data->parent = TPM2_RH_OWNER;
 
@@ -422,6 +425,8 @@ tpm2tss_tpm2data_read(const char *filename, TPM2_DATA **tpm2Datap)
         BIO_free(bio);
     if (tpk)
         TSSPRIVKEY_free(tpk);
+    if (bn_parent)
+        BN_free(bn_parent);
 
     return 0;
 }
