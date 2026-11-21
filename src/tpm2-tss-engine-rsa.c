@@ -717,12 +717,41 @@ rsa_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
         return 0;
     }
 
-    if (!digest_finish(sig_data, &digest_ptr, &validation_ptr))
+    /*
+     * OpenSSL 3.0 computes the message digest with its provider, so the
+     * EVP_MD_CTX update function override (which feeds the TPM hash
+     * sequence object) is never called and the TPM sequence stays empty.
+     * Use the digest computed by OpenSSL and sign it without a validation
+     * ticket, which requires an unrestricted signing key.
+     */
+    if (sig_data->seq_handle != ESYS_TR_NONE) {
+        Esys_FlushContext(sig_data->key->esys_ctx, sig_data->seq_handle);
+        sig_data->seq_handle = ESYS_TR_NONE;
+    }
+
+    digest_ptr = OPENSSL_malloc(sizeof(*digest_ptr));
+    if (digest_ptr == NULL)
         return 0;
+
+    unsigned int md_len = 0;
+    if (!EVP_DigestFinal_ex(mctx, digest_ptr->buffer, &md_len)) {
+        OPENSSL_free(digest_ptr);
+        digest_ptr = NULL;
+        return 0;
+    }
+    digest_ptr->size = md_len;
+
+    /* the ticket parameter is mandatory, use an empty one for
+       unrestricted keys */
+    TPMT_TK_HASHCHECK empty_ticket = {
+        .tag = TPM2_ST_HASHCHECK,
+        .hierarchy = TPM2_RH_NULL,
+        .digest.size = 0,
+    };
 
     r = Esys_Sign(sig_data->key->esys_ctx, sig_data->key->key_handle,
                   ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                  digest_ptr, &in_scheme, validation_ptr, &tpm_sig);
+                  digest_ptr, &in_scheme, &empty_ticket, &tpm_sig);
     ERRchktss(rsa_signctx, r, goto error);
 
     memcpy(sig, tpm_sig->signature.rsassa.sig.buffer, sig_data->sig_size);
@@ -735,7 +764,7 @@ rsa_signctx(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
     r = 0;
  out:
     Esys_Free(tpm_sig);
-    Esys_Free(digest_ptr);
+    OPENSSL_free(digest_ptr);
     Esys_Free(validation_ptr);
 
     return r;
